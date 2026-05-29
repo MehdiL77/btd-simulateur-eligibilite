@@ -11,6 +11,8 @@
     calendly:    'https://calendly.com/btd-consulting/financement?month=2026-05',
     fontsHref:   'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap',
     emailjsSrc:  'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js',
+    calendlyCss: 'https://assets.calendly.com/assets/external/widget.css',
+    calendlyJs:  'https://assets.calendly.com/assets/external/widget.js',
     maxVisible:  4,
     cooldownMs:  5000
   };
@@ -30,7 +32,7 @@
       sub:{
         trigger:'oui',
         key:'innovation-type',
-        multi:true, // <-- NOUVEAU : sélection multiple
+        multi:true,
         q:"Type(s) d'innovation (plusieurs choix possibles) :",
         o:[
           ['technologique','Technologique'],
@@ -48,12 +50,13 @@
       o:[['oui','Oui'],['non','Non']] },
     { id:8, q:"Quel est ton besoin de financement ?",
       o:[['0-50k',"Jusqu'à 50 000 €"],['50k-150k','50 000 — 150 000 €'],['150k-300k','150 000 — 300 000 €'],['300k+','Plus de 300 000 €']] },
-    { id:9, q:"Que souhaites-tu financer ?",
+    { id:9, q:"Que souhaites-tu financer ? (plusieurs choix possibles)",
+      multi:true, // <-- NOUVEAU : Q9 en multi-sélection
       o:[
         ['randd','Recherche & développement'],
-        ['materiel','Investissement matériel / industriel'],   // <-- LIBELLÉ MIS À JOUR
+        ['materiel','Investissement matériel / industriel'],
         ['tresorerie','Trésorerie'],
-        ['recrutement','Recrutement et communication'],         // <-- REMPLACE "Foncier et travaux"
+        ['recrutement','Recrutement et communication'],
         ['autres','Autres']
       ] },
     { id:10, q:"De quels fonds propres disposes-tu ?",
@@ -66,10 +69,10 @@
     'i-Lab': "Concours d'innovation pour la création d'entreprises de technologies innovantes.",
     'i-Nov': "Concours d'innovation pour les PME avec des projets à fort potentiel.",
     'Phase Initiative': "Accompagnement et financement pour les projets en phase d'idéation.",
-    "Prêt d'honneur Réseau Entreprendre": "Prêt d'honneur à taux zéro et mentorat par le Réseau Entreprendre, pour les créateurs et repreneurs accompagnés.", // <-- RENOMMÉ
+    "Prêt d'honneur Réseau Entreprendre": "Prêt d'honneur à taux zéro et mentorat par le Réseau Entreprendre, pour les créateurs et repreneurs accompagnés.",
     'Aides régionales': "Dispositifs de soutien spécifiques à ta région.",
     'Avance remboursable BPI': "Financement sans garantie pour les projets innovants.",
-    "Prêt d'amorçage BPI": "Prêt destiné aux entreprises innovantes en phase de levée de fonds.", // <-- DESCRIPTION CORRIGÉE
+    "Prêt d'amorçage BPI": "Prêt destiné aux entreprises innovantes en phase de levée de fonds.",
     'Prêt innovation BPI': "Prêt pour financer le développement et la commercialisation d'innovations.",
     "Crédit d'impôt innovation (CII)": "Crédit d'impôt de 30 % sur les dépenses d'innovation des PME.",
     "Crédit d'impôt recherche (CIR)": "Crédit d'impôt jusqu'à 30 % des dépenses de R&D.",
@@ -83,16 +86,21 @@
     "Prêt d'honneur": "Prêt personnel à taux zéro pour renforcer les fonds propres (Initiative France, etc.)."
   };
 
-  /* ---------- LOGIQUE D'ÉLIGIBILITÉ (scoring strict, multi-types) ---------- */
+  /* ---------- LOGIQUE D'ÉLIGIBILITÉ (multi-types + multi-usages) ---------- */
   function analyze(a) {
-    // Normalisation type d'innovation : toujours en tableau
+    // Normalisation type d'innovation
     var types = a['innovation-type'];
     if (!Array.isArray(types)) types = types ? [types] : [];
-    var hasType = function (x) { return types.indexOf(x) > -1; };
+    var hasType   = function (x) { return types.indexOf(x) > -1; };
     var hasAnyTech = hasType('technologique') || hasType('technique');
 
+    // Normalisation usage du financement (Q9)
+    var uses = a[9];
+    if (!Array.isArray(uses)) uses = uses ? [uses] : [];
+    var hasUse = function (x) { return uses.indexOf(x) > -1; };
+
     var fr=a[7]==='oui', imm=a[1]==='oui', inno=a[5]==='oui',
-        st=a[2], team=a[4], need=a[8], use=a[9], eq=a[10],
+        st=a[2], team=a[4], need=a[8], eq=a[10],
         acc=a[6]==='oui', funded=a[3]==='oui';
 
     var rules = [
@@ -102,25 +110,24 @@
       ['i-Nov', function(){ if(!fr||!inno||!imm)return 0; if(st!=='croissance'&&st!=='diversification')return 0; if(team==='0')return 0; if(need==='0-50k')return 0; return 80; }],
       ['Phase Initiative', function(){ if(!fr||st!=='creation'||!acc)return 0; if(eq==='100k+')return 0; return 70; }],
       ["Prêt d'honneur Réseau Entreprendre", function(){ if(!fr||!acc)return 0; if(st!=='creation'&&st!=='croissance')return 0; if(team==='0')return 0; return 70; }],
-      ['Aides régionales', function(){ if(!fr)return 0; var s=50; if(use==='recrutement'||use==='materiel')s+=20; if(inno)s+=10; return s; }],
-      ['Avance remboursable BPI', function(){ if(!fr||!inno||!imm)return 0; if(need==='0-50k')return 0; if(use!=='randd'&&use!=='materiel')return 0; return 75; }],
+      ['Aides régionales', function(){ if(!fr)return 0; var s=50; if(hasUse('recrutement')||hasUse('materiel'))s+=20; if(inno)s+=10; return s; }],
+      ['Avance remboursable BPI', function(){ if(!fr||!inno||!imm)return 0; if(need==='0-50k')return 0; if(!hasUse('randd')&&!hasUse('materiel'))return 0; return 75; }],
       ["Prêt d'amorçage BPI", function(){ if(!fr||!imm||!funded)return 0; if(st!=='creation'&&st!=='croissance')return 0; if(!inno)return 0; return 80; }],
       ['Prêt innovation BPI', function(){ if(!fr||!inno||!imm)return 0; if(st!=='croissance'&&st!=='diversification')return 0; if(need==='0-50k')return 0; return 75; }],
       ["Crédit d'impôt innovation (CII)", function(){
         if(!fr||!inno||!imm)return 0;
-        // Le CII vise l'innovation produit/process : exclu si l'utilisateur n'a coché QUE sociale et/ou business
         var techRelated = hasType('technologique')||hasType('technique')||hasType('ergonomique');
         if(!techRelated)return 0;
         if(team==='0')return 0;
         return 70;
       }],
-      ["Crédit d'impôt recherche (CIR)", function(){ if(!fr||!inno||!imm)return 0; if(!hasType('technologique'))return 0; if(use!=='randd')return 0; return 90; }],
+      ["Crédit d'impôt recherche (CIR)", function(){ if(!fr||!inno||!imm)return 0; if(!hasType('technologique'))return 0; if(!hasUse('randd'))return 0; return 90; }],
       ["Aide à l'export (Chèque Relance Export)", function(){ if(!fr||!imm)return 0; if(st!=='export')return 0; return 80; }],
       ['Prêt Croissance Internationale BPI', function(){ if(!fr||!imm)return 0; if(st!=='export')return 0; if(team==='0')return 0; if(need==='0-50k')return 0; return 75; }],
       ['Garantie BPI', function(){ if(!fr||!imm)return 0; if(eq!=='0-10k'&&eq!=='10k-25k')return 0; if(need==='0-50k')return 0; return 60; }],
       ['FEDER', function(){ if(!fr||!inno)return 0; if(need!=='150k-300k'&&need!=='300k+')return 0; return 65; }],
       ['Horizon Europe (EIC Accelerator)', function(){ if(!inno)return 0; if(!hasType('technologique'))return 0; if(need!=='300k+')return 0; return 70; }],
-      ["Aide à l'embauche", function(){ if(!fr||!imm)return 0; if(st!=='croissance'&&st!=='diversification')return 0; if(team==='0')return 0; var s=55; if(use==='recrutement')s+=15; return s; }],
+      ["Aide à l'embauche", function(){ if(!fr||!imm)return 0; if(st!=='croissance'&&st!=='diversification')return 0; if(team==='0')return 0; var s=55; if(hasUse('recrutement'))s+=15; return s; }],
       ['Aide à la formation (OPCO/FNE)', function(){ if(!fr||!imm)return 0; if(team==='0')return 0; return 50; }],
       ["Prêt d'honneur", function(){ if(!fr||st!=='creation')return 0; if(eq!=='0-10k'&&eq!=='10k-25k')return 0; return 65; }]
     ];
@@ -155,6 +162,38 @@
       document.head.appendChild(s);
     });
   }
+  // Charge le widget Calendly (CSS + JS) pour le popup
+  function loadCalendly(){
+    return new Promise(function(res){
+      if (window.Calendly) return res(true);
+      // CSS
+      if (!document.querySelector('link[data-btd-calendly-css]')) {
+        var l = document.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = CONFIG.calendlyCss;
+        l.setAttribute('data-btd-calendly-css','1');
+        document.head.appendChild(l);
+      }
+      // JS — si déjà en cours de chargement, on attend
+      var existing = document.querySelector('script[data-btd-calendly-js]');
+      if (existing) {
+        var t = 0;
+        var iv = setInterval(function(){
+          t += 100;
+          if (window.Calendly) { clearInterval(iv); res(true); }
+          else if (t >= 6000) { clearInterval(iv); res(false); }
+        }, 100);
+        return;
+      }
+      var s = document.createElement('script');
+      s.src = CONFIG.calendlyJs;
+      s.async = true;
+      s.setAttribute('data-btd-calendly-js','1');
+      s.onload  = function(){ res(true); };
+      s.onerror = function(){ res(false); };
+      document.head.appendChild(s);
+    });
+  }
   function track(name, params){
     try { if (typeof window.gtag==='function') window.gtag('event', name, params||{}); } catch(e){}
     try {
@@ -165,7 +204,7 @@
     } catch(e){}
   }
 
-  /* ---------- STYLES (Shadow DOM, isolés de Wix) ---------- */
+  /* ---------- STYLES (Shadow DOM) ---------- */
   var CSS = "\
   :host{ all:initial; display:block; font-family:'Montserrat',system-ui,sans-serif; color:#2a3340; }\
   *{ margin:0; padding:0; box-sizing:border-box; }\
@@ -186,7 +225,8 @@
   .prog{ height:6px; background:#e7ebf1; border-radius:4px; overflow:hidden; margin-bottom:.6rem; }\
   .prog-fill{ height:100%; background:linear-gradient(90deg,#FFD700,#e6c200); width:0; border-radius:4px; transition:.25s; }\
   .meta{ display:flex; justify-content:space-between; font-size:.74rem; font-weight:700; letter-spacing:.04em; color:#1a4d80; text-transform:uppercase; margin-bottom:1.5rem; }\
-  .question{ font-weight:700; font-size:clamp(1.15rem,2.6vw,1.4rem); line-height:1.3; color:#003366; margin-bottom:1.5rem; }\
+  .question{ font-weight:700; font-size:clamp(1.15rem,2.6vw,1.4rem); line-height:1.3; color:#003366; margin-bottom:1rem; }\
+  .hint{ font-size:.82rem; color:#66707f; font-weight:500; margin:-.6rem 0 1rem; font-style:italic; }\
   .opts{ display:flex; flex-direction:column; gap:.7rem; }\
   .opt{ background:#f4f6f9; border:2px solid transparent; border-radius:10px; padding:.95rem 1.2rem; font-family:inherit; font-weight:600; font-size:.98rem; color:#2a3340; text-align:left; cursor:pointer; transition:.25s; display:flex; align-items:center; justify-content:space-between; }\
   .opt:hover{ background:#e7ebf1; transform:translateX(3px); }\
@@ -198,7 +238,6 @@
   .sub{ margin-top:1rem; padding:1.1rem; background:rgba(0,51,102,.035); border-radius:10px; display:none; }\
   .sub.active{ display:block; animation:fade .3s ease; }\
   .sub .question{ font-size:.98rem; margin-bottom:.9rem; }\
-  .sub-hint{ font-size:.78rem; color:#66707f; font-weight:500; margin-bottom:.8rem; }\
   .field{ margin-bottom:1.2rem; }\
   .label{ display:block; font-weight:600; font-size:.85rem; color:#003366; margin-bottom:.4rem; }\
   .input{ width:100%; padding:.85rem 1rem; border:2px solid #dde3ec; border-radius:10px; font-family:inherit; font-size:.97rem; color:#2a3340; background:#fff; transition:.25s; }\
@@ -241,8 +280,9 @@
   .post p + p{ margin-top:.6rem; }\
   .post strong{ color:#FFD700; font-weight:700; }\
   .cta-text{ font-size:.95rem; color:#66707f; margin:1.6rem 0 1rem; }\
-  .calendly{ display:inline-flex; align-items:center; gap:.5rem; background:#003366; color:#fff; text-decoration:none; padding:.95rem 2rem; border-radius:50px; font-weight:700; font-size:.97rem; transition:.25s; box-shadow:0 6px 18px rgba(0,51,102,.25); cursor:pointer; border:none; font-family:inherit; }\
+  .calendly{ display:inline-flex; align-items:center; gap:.5rem; background:#003366; color:#fff; padding:.95rem 2rem; border-radius:50px; font-weight:700; font-size:.97rem; transition:.25s; box-shadow:0 6px 18px rgba(0,51,102,.25); cursor:pointer; border:none; font-family:inherit; }\
   .calendly:hover{ background:#00254d; transform:translateY(-2px); }\
+  .calendly:disabled{ opacity:.7; cursor:wait; }\
   .sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }\
   @keyframes spin{ to{ transform:rotate(360deg); } }\
   @keyframes fade{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }\
@@ -271,6 +311,7 @@
     this._mounted = true;
     ensureFont();
     loadEmailJS();
+    loadCalendly(); // précharge Calendly pour que le popup s'ouvre instantanément
     this.root = this.attachShadow({ mode: 'open' });
     this.state.utm = this._getUTM();
     this._render();
@@ -317,7 +358,6 @@
           '<div class="r-sub">Selon tes réponses, ton projet pourrait être éligible aux dispositifs suivants :</div>' +
           '<div class="aids" id="aids"></div>' +
           '<div class="blurred" id="blurred" style="display:none"><div id="blurred-content"></div><div class="blur-ov"><div class="blur-msg">D\'autres aides semblent éligibles pour ton projet&nbsp;! Prends RDV pour une analyse complète.</div></div></div>' +
-          // BLOC POST-RÉSULTATS (NOUVEAU)
           '<div class="post">' +
             '<div class="post-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 6h16v12H4z"/><path d="M4 6l8 7 8-7"/></svg>Vérifie tes spams</div>' +
             '<p>Ton analyse vient d\'être envoyée par email. Si tu ne la reçois pas dans quelques minutes, pense à consulter ton dossier <strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.</p>' +
@@ -341,16 +381,23 @@
       card.className = 'step';
       card.setAttribute('data-step', n);
 
+      // Hint multi pour question principale
+      var mainHint = q.multi ? '<div class="hint">Coche toutes les options qui correspondent à ton projet.</div>' : '';
+
+      // Classe multi sur boutons options principaux
+      var mainCls = 'opt' + (q.multi ? ' multi' : '');
+
+      // Sous-question
       var sub = '';
       if (q.sub) {
-        var multiCls = q.sub.multi ? ' multi' : '';
-        var hint = q.sub.multi ? '<div class="sub-hint">Coche toutes les options qui correspondent à ton projet.</div>' : '';
+        var subCls = 'opt' + (q.sub.multi ? ' multi' : '');
+        var subHint = q.sub.multi ? '<div class="hint">Coche toutes les options qui correspondent.</div>' : '';
         sub = '<div class="sub" id="sub-' + n + '">' +
               '<div class="question">' + esc(q.sub.q) + '</div>' +
-              hint +
+              subHint +
               '<div class="opts">' +
               q.sub.o.map(function (o) {
-                return '<button type="button" class="opt' + multiCls + '" data-sub="' + esc(q.sub.key) + '" data-val="' + esc(o[0]) + '"><span>' + esc(o[1]) + '</span><span class="ck"></span></button>';
+                return '<button type="button" class="' + subCls + '" data-sub="' + esc(q.sub.key) + '" data-val="' + esc(o[0]) + '"><span>' + esc(o[1]) + '</span><span class="ck"></span></button>';
               }).join('') +
               '</div></div>';
       }
@@ -359,8 +406,9 @@
         '<div class="prog"><div class="prog-fill" style="width:' + pct + '%"></div></div>' +
         '<div class="meta"><span>Question ' + n + ' / ' + total + '</span><span>' + pct + '%</span></div>' +
         '<div class="question">' + esc(q.q) + '</div>' +
+        mainHint +
         '<div class="opts">' +
-          q.o.map(function (o) { return '<button type="button" class="opt" data-q="' + n + '" data-val="' + esc(o[0]) + '"><span>' + esc(o[1]) + '</span><span class="ck"></span></button>'; }).join('') +
+          q.o.map(function (o) { return '<button type="button" class="' + mainCls + '" data-q="' + n + '" data-val="' + esc(o[0]) + '"><span>' + esc(o[1]) + '</span><span class="ck"></span></button>'; }).join('') +
         '</div>' + sub +
         '<div class="nav"><button type="button" class="btn prev"' + (n === 1 ? ' disabled' : '') + '>Précédent</button>' +
         '<button type="button" class="btn next" disabled>Suivant ' + ARROW + '</button></div>';
@@ -405,43 +453,51 @@
       if (e.target.matches('#fn,#ln,#ph,#em')) self._validateForm();
     });
 
-    // Calendly : window.open() FORCÉ pour contourner les blocages d'ancres dans certains contextes Shadow DOM/iframe
+    // Calendly : OUVERTURE EN POPUP sur le site (pas de redirection)
     this.$('calendly').addEventListener('click', function (e) {
       e.preventDefault();
+      var btn = e.currentTarget;
       track('calendly_click', {});
-      try {
-        var win = window.open(CONFIG.calendly, '_blank', 'noopener,noreferrer');
-        // Fallback si popup bloquée : navigation directe
-        if (!win) window.location.href = CONFIG.calendly;
-      } catch (err) {
-        window.location.href = CONFIG.calendly;
-      }
+      btn.disabled = true;
+      loadCalendly().then(function (ok) {
+        btn.disabled = false;
+        if (ok && window.Calendly && window.Calendly.initPopupWidget) {
+          window.Calendly.initPopupWidget({ url: CONFIG.calendly });
+        } else {
+          // Fallback : nouvel onglet si le widget n'a pas pu charger
+          try {
+            var w = window.open(CONFIG.calendly, '_blank', 'noopener,noreferrer');
+            if (!w) window.location.href = CONFIG.calendly;
+          } catch (err) { window.location.href = CONFIG.calendly; }
+        }
+      });
     });
   };
 
-  /* ----- SÉLECTION D'UNE OPTION (gère single + multi) ----- */
+  /* ----- SÉLECTION D'UNE OPTION (single + multi, main + sub) ----- */
   BTDSimulator.prototype._pick = function (btn) {
     var card = btn.closest('.step');
-    var key  = btn.dataset.sub;
+    var key  = btn.dataset.sub;                  // clé sous-question si applicable
     var val  = btn.dataset.val;
     var isMulti = btn.classList.contains('multi');
 
-    // -------- Cas 1 : sous-option MULTI-select --------
-    if (key && isMulti) {
-      var current = this.state.answers[key];
+    // -------- MULTI-SELECT (main OU sub) : toggle individuel --------
+    if (isMulti) {
+      var storeKey = key || parseInt(btn.dataset.q, 10);
+      var current = this.state.answers[storeKey];
       if (!Array.isArray(current)) current = current ? [current] : [];
       var idx = current.indexOf(val);
       if (idx > -1) { current.splice(idx, 1); btn.classList.remove('sel'); }
       else { current.push(val); btn.classList.add('sel'); }
-      this.state.answers[key] = current;
+      this.state.answers[storeKey] = current;
 
-      // On ré-évalue l'état du bouton "Suivant"
       this._refreshNext(card);
+      if (!key) track('question_answered', { question: storeKey, answers: current.join(',') });
       this._save();
       return;
     }
 
-    // -------- Cas 2 : sous-option SINGLE-select (legacy) --------
+    // -------- SINGLE-SELECT : sous-option --------
     if (key) {
       var box = btn.parentElement;
       box.querySelectorAll('.opt').forEach(function (b) { b.classList.remove('sel'); });
@@ -452,7 +508,7 @@
       return;
     }
 
-    // -------- Cas 3 : question principale (single) --------
+    // -------- SINGLE-SELECT : question principale --------
     var parent = btn.parentElement;
     parent.querySelectorAll('.opt').forEach(function (b) { b.classList.remove('sel'); });
     btn.classList.add('sel');
@@ -468,7 +524,6 @@
       } else {
         sub.classList.remove('active');
         delete this.state.answers[q.sub.key];
-        // Désélectionner les sous-options visuellement
         sub.querySelectorAll('.opt').forEach(function (b) { b.classList.remove('sel'); });
       }
     }
@@ -477,7 +532,7 @@
     this._save();
   };
 
-  /* ----- Active/désactive le bouton "Suivant" selon l'état complet de la carte ----- */
+  /* ----- Active/désactive "Suivant" selon l'état de la carte ----- */
   BTDSimulator.prototype._refreshNext = function (card) {
     var n = parseInt(card.getAttribute('data-step'), 10);
     var nextBtn = card.querySelector('.next');
@@ -486,8 +541,16 @@
     var q = QUESTIONS[n - 1];
     var mainAns = this.state.answers[n];
 
+    // Question principale en multi : au moins une case cochée
+    if (q && q.multi) {
+      var hasMain = Array.isArray(mainAns) ? mainAns.length > 0 : !!mainAns;
+      nextBtn.disabled = !hasMain;
+      return;
+    }
+
     if (!mainAns) { nextBtn.disabled = true; return; }
 
+    // Si sous-question active, exiger une réponse
     if (q && q.sub && mainAns === q.sub.trigger) {
       var subAns = this.state.answers[q.sub.key];
       var hasSub = Array.isArray(subAns) ? subAns.length > 0 : !!subAns;
@@ -511,13 +574,19 @@
     card.classList.add('active');
     this.state.current = n;
 
-    // Restaurer sélections
+    // Restaurer sélections (gère array et string)
     var ans = this.state.answers[n];
-    if (ans) {
-      var b = card.querySelector('.opt[data-val="' + ans + '"][data-q]');
-      if (b) b.classList.add('sel');
-      var q = QUESTIONS[n - 1];
-      if (q && q.sub && ans === q.sub.trigger) {
+    var q = QUESTIONS[n - 1];
+
+    if (ans !== undefined) {
+      var arr = Array.isArray(ans) ? ans : [ans];
+      arr.forEach(function (v) {
+        var b = card.querySelector('.opt[data-val="' + v + '"][data-q]');
+        if (b) b.classList.add('sel');
+      });
+
+      // Sous-question le cas échéant
+      if (q && q.sub && !Array.isArray(ans) && ans === q.sub.trigger) {
         this.$('sub-' + n).classList.add('active');
         var subAns = this.state.answers[q.sub.key];
         var subArr = Array.isArray(subAns) ? subAns : (subAns ? [subAns] : []);
@@ -587,7 +656,7 @@
       });
   };
 
-  // EmailJS — params {email, message} conservés
+  // EmailJS — {email, message} conservés
   BTDSimulator.prototype._sendEmail = function (aids) {
     var a = this.state.answers;
     if (!window.emailjs) return Promise.reject(new Error('EmailJS absent'));
@@ -600,8 +669,12 @@
   // Make webhook — champs d'origine conservés + payload enrichi
   BTDSimulator.prototype._sendMake = function (aids) {
     var a = this.state.answers, u = this.state.utm;
+
     var innovTypes = a['innovation-type'];
     if (!Array.isArray(innovTypes)) innovTypes = innovTypes ? [innovTypes] : [];
+
+    var usages = a[9];
+    if (!Array.isArray(usages)) usages = usages ? [usages] : [];
 
     var payload = {
       firstname: a.firstname, lastname: a.lastname, email: a.email, phone: a.phone,
@@ -610,9 +683,12 @@
       reponses: {
         immatriculee: a[1], stade: a[2], deja_finance: a[3], equipe: a[4],
         innovation: a[5],
-        innovation_type: innovTypes,                // tableau désormais
-        innovation_type_str: innovTypes.join(', '), // version texte pour Mailchimp
-        accompagnement: a[6], france: a[7], besoin: a[8], usage: a[9], fonds_propres: a[10]
+        innovation_type: innovTypes,
+        innovation_type_str: innovTypes.join(', '),
+        accompagnement: a[6], france: a[7], besoin: a[8],
+        usage: usages,                          // tableau
+        usage_str: usages.join(', '),           // version texte pour Mailchimp
+        fonds_propres: a[10]
       },
       timestamp: new Date().toISOString()
     };
