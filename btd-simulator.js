@@ -1,21 +1,3 @@
-/* ============================================================
-   BTD CONSULTING — Simulateur d'éligibilité (v2)
-   Élément personnalisé Wix (Custom Element / Web Component)
-   ------------------------------------------------------------
-   Mise à jour v2 :
-   - Q9 : "Investissement matériel / industriel"
-   - Q9 : "Foncier et travaux" -> "Recrutement et communication"
-   - Q5 sous-question : MULTI-SELECT (plusieurs types d'innovation)
-   - Résultats : bloc d'info "vérifier spams + RDV expert"
-   - Bouton Calendly : URL mise à jour + window.open() forcé
-   - Aide "Phase REON" -> "Prêt d'honneur Réseau Entreprendre"
-   - Description "Prêt d'amorçage BPI" corrigée
-
-   Automatisations conservées à l'identique :
-   - EmailJS  : service_6dapp1n / template_04p4rbb  {email, message}
-   - Make     : webhook -> Mailchimp  {firstname,lastname,email,phone}
-   - Calendly : btd-consulting/financement
-   ============================================================ */
 (function () {
   'use strict';
 
