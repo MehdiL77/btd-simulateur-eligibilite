@@ -1,14 +1,32 @@
+/* ============================================================
+   BTD CONSULTING — Simulateur d'éligibilité (v2)
+   Élément personnalisé Wix (Custom Element / Web Component)
+   ------------------------------------------------------------
+   Mise à jour v2 :
+   - Q9 : "Investissement matériel / industriel"
+   - Q9 : "Foncier et travaux" -> "Recrutement et communication"
+   - Q5 sous-question : MULTI-SELECT (plusieurs types d'innovation)
+   - Résultats : bloc d'info "vérifier spams + RDV expert"
+   - Bouton Calendly : URL mise à jour + window.open() forcé
+   - Aide "Phase REON" -> "Prêt d'honneur Réseau Entreprendre"
+   - Description "Prêt d'amorçage BPI" corrigée
+
+   Automatisations conservées à l'identique :
+   - EmailJS  : service_6dapp1n / template_04p4rbb  {email, message}
+   - Make     : webhook -> Mailchimp  {firstname,lastname,email,phone}
+   - Calendly : btd-consulting/financement
+   ============================================================ */
 (function () {
   'use strict';
 
-  var TAG = 'btd-simulator'; // <-- nom de balise à renseigner dans Wix
+  var TAG = 'btd-simulator';
   if (customElements.get(TAG)) return;
 
   /* ---------- CONFIG ---------- */
   var CONFIG = {
     emailjs:     { publicKey: '9wQDV2yQMMiwHxrlp', serviceId: 'service_6dapp1n', templateId: 'template_04p4rbb' },
     makeWebhook: 'https://hook.eu2.make.com/n1h141qajnp8ijygmsqzjr5i6py7ry5o',
-    calendly:    'https://calendly.com/btd-consulting/financement',
+    calendly:    'https://calendly.com/btd-consulting/financement?month=2026-05',
     fontsHref:   'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap',
     emailjsSrc:  'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js',
     maxVisible:  4,
@@ -27,8 +45,21 @@
       o:[['0','Seul·e'],['1-5','1 à 5 personnes'],['6+','6 personnes ou plus']] },
     { id:5, q:"Ton projet intègre-t-il une innovation ?",
       o:[['oui','Oui'],['non','Non']],
-      sub:{ trigger:'oui', key:'innovation-type', q:"Type d'innovation :",
-        o:[['technologique','Technologique'],['sociale','Sociale'],['ergonomique','Ergonomique'],['technique','Technique'],['business',"Modèle d'affaires"],['autre','Autre']] } },
+      sub:{
+        trigger:'oui',
+        key:'innovation-type',
+        multi:true, // <-- NOUVEAU : sélection multiple
+        q:"Type(s) d'innovation (plusieurs choix possibles) :",
+        o:[
+          ['technologique','Technologique'],
+          ['sociale','Sociale'],
+          ['ergonomique','Ergonomique'],
+          ['technique','Technique'],
+          ['business',"Modèle d'affaires"],
+          ['autre','Autre']
+        ]
+      }
+    },
     { id:6, q:"Bénéficies-tu d'un accompagnement (incubateur, réseau…) ?",
       o:[['oui','Oui'],['non','Non']] },
     { id:7, q:"Ton entreprise est-elle localisée en France ?",
@@ -36,7 +67,13 @@
     { id:8, q:"Quel est ton besoin de financement ?",
       o:[['0-50k',"Jusqu'à 50 000 €"],['50k-150k','50 000 — 150 000 €'],['150k-300k','150 000 — 300 000 €'],['300k+','Plus de 300 000 €']] },
     { id:9, q:"Que souhaites-tu financer ?",
-      o:[['randd','Recherche & développement'],['materiel','Investissement matériel'],['tresorerie','Trésorerie'],['foncier','Foncier et travaux'],['autres','Autres']] },
+      o:[
+        ['randd','Recherche & développement'],
+        ['materiel','Investissement matériel / industriel'],   // <-- LIBELLÉ MIS À JOUR
+        ['tresorerie','Trésorerie'],
+        ['recrutement','Recrutement et communication'],         // <-- REMPLACE "Foncier et travaux"
+        ['autres','Autres']
+      ] },
     { id:10, q:"De quels fonds propres disposes-tu ?",
       o:[['0-10k',"Jusqu'à 10 000 €"],['10k-25k','10 000 — 25 000 €'],['25k-100k','25 000 — 100 000 €'],['100k+','Plus de 100 000 €']] }
   ];
@@ -47,10 +84,10 @@
     'i-Lab': "Concours d'innovation pour la création d'entreprises de technologies innovantes.",
     'i-Nov': "Concours d'innovation pour les PME avec des projets à fort potentiel.",
     'Phase Initiative': "Accompagnement et financement pour les projets en phase d'idéation.",
-    'Phase REON (Réseau Entreprendre)': "Prêt d'honneur et mentorat par le Réseau Entreprendre.",
+    "Prêt d'honneur Réseau Entreprendre": "Prêt d'honneur à taux zéro et mentorat par le Réseau Entreprendre, pour les créateurs et repreneurs accompagnés.", // <-- RENOMMÉ
     'Aides régionales': "Dispositifs de soutien spécifiques à ta région.",
     'Avance remboursable BPI': "Financement sans garantie pour les projets innovants.",
-    "Prêt d'amorçage BPI": "Prêt pour les jeunes entreprises ayant déjà reçu une aide à l'innovation.",
+    "Prêt d'amorçage BPI": "Prêt destiné aux entreprises innovantes en phase de levée de fonds.", // <-- DESCRIPTION CORRIGÉE
     'Prêt innovation BPI': "Prêt pour financer le développement et la commercialisation d'innovations.",
     "Crédit d'impôt innovation (CII)": "Crédit d'impôt de 30 % sur les dépenses d'innovation des PME.",
     "Crédit d'impôt recherche (CIR)": "Crédit d'impôt jusqu'à 30 % des dépenses de R&D.",
@@ -61,32 +98,47 @@
     'Horizon Europe (EIC Accelerator)': "Programme européen pour la recherche et l'innovation deeptech.",
     "Aide à l'embauche": "Soutien financier pour la création d'emplois (zones & profils éligibles).",
     'Aide à la formation (OPCO/FNE)': "Financement de la formation des salariés.",
-    "Prêt d'honneur": "Prêt personnel à taux zéro pour renforcer les fonds propres."
+    "Prêt d'honneur": "Prêt personnel à taux zéro pour renforcer les fonds propres (Initiative France, etc.)."
   };
 
-  /* ---------- LOGIQUE D'ÉLIGIBILITÉ (scoring strict) ---------- */
+  /* ---------- LOGIQUE D'ÉLIGIBILITÉ (scoring strict, multi-types) ---------- */
   function analyze(a) {
-    var t=a['innovation-type'], fr=a[7]==='oui', imm=a[1]==='oui', inno=a[5]==='oui',
-        st=a[2], team=a[4], need=a[8], use=a[9], eq=a[10], acc=a[6]==='oui', funded=a[3]==='oui';
+    // Normalisation type d'innovation : toujours en tableau
+    var types = a['innovation-type'];
+    if (!Array.isArray(types)) types = types ? [types] : [];
+    var hasType = function (x) { return types.indexOf(x) > -1; };
+    var hasAnyTech = hasType('technologique') || hasType('technique');
+
+    var fr=a[7]==='oui', imm=a[1]==='oui', inno=a[5]==='oui',
+        st=a[2], team=a[4], need=a[8], use=a[9], eq=a[10],
+        acc=a[6]==='oui', funded=a[3]==='oui';
+
     var rules = [
-      ['Bourse French Tech (BFT)', function(){ if(!fr||!inno||!imm)return 0; if(st!=='creation')return 0; if(team==='6+')return 0; if(need!=='0-50k')return 0; var s=80; if(t==='technologique'||t==='technique')s+=15; return s; }],
-      ['Bourse French Tech Émergence (BFTE)', function(){ if(!fr||!inno||!imm)return 0; if(st!=='creation')return 0; if(t!=='technologique'&&t!=='technique')return 0; if(team==='6+')return 0; return 85; }],
-      ['i-Lab', function(){ if(!fr||!inno)return 0; if(t!=='technologique')return 0; if(imm&&st!=='creation')return 0; return 75; }],
+      ['Bourse French Tech (BFT)', function(){ if(!fr||!inno||!imm)return 0; if(st!=='creation')return 0; if(team==='6+')return 0; if(need!=='0-50k')return 0; var s=80; if(hasAnyTech)s+=15; return s; }],
+      ['Bourse French Tech Émergence (BFTE)', function(){ if(!fr||!inno||!imm)return 0; if(st!=='creation')return 0; if(!hasAnyTech)return 0; if(team==='6+')return 0; return 85; }],
+      ['i-Lab', function(){ if(!fr||!inno)return 0; if(!hasType('technologique'))return 0; if(imm&&st!=='creation')return 0; return 75; }],
       ['i-Nov', function(){ if(!fr||!inno||!imm)return 0; if(st!=='croissance'&&st!=='diversification')return 0; if(team==='0')return 0; if(need==='0-50k')return 0; return 80; }],
       ['Phase Initiative', function(){ if(!fr||st!=='creation'||!acc)return 0; if(eq==='100k+')return 0; return 70; }],
-      ['Phase REON (Réseau Entreprendre)', function(){ if(!fr||!acc)return 0; if(st!=='creation'&&st!=='croissance')return 0; if(team==='0')return 0; return 70; }],
-      ['Aides régionales', function(){ if(!fr)return 0; var s=50; if(use==='foncier'||use==='materiel')s+=20; if(inno)s+=10; return s; }],
+      ["Prêt d'honneur Réseau Entreprendre", function(){ if(!fr||!acc)return 0; if(st!=='creation'&&st!=='croissance')return 0; if(team==='0')return 0; return 70; }],
+      ['Aides régionales', function(){ if(!fr)return 0; var s=50; if(use==='recrutement'||use==='materiel')s+=20; if(inno)s+=10; return s; }],
       ['Avance remboursable BPI', function(){ if(!fr||!inno||!imm)return 0; if(need==='0-50k')return 0; if(use!=='randd'&&use!=='materiel')return 0; return 75; }],
       ["Prêt d'amorçage BPI", function(){ if(!fr||!imm||!funded)return 0; if(st!=='creation'&&st!=='croissance')return 0; if(!inno)return 0; return 80; }],
       ['Prêt innovation BPI', function(){ if(!fr||!inno||!imm)return 0; if(st!=='croissance'&&st!=='diversification')return 0; if(need==='0-50k')return 0; return 75; }],
-      ["Crédit d'impôt innovation (CII)", function(){ if(!fr||!inno||!imm)return 0; if(t==='sociale'||t==='business')return 0; if(team==='0')return 0; return 70; }],
-      ["Crédit d'impôt recherche (CIR)", function(){ if(!fr||!inno||!imm)return 0; if(t!=='technologique')return 0; if(use!=='randd')return 0; return 90; }],
+      ["Crédit d'impôt innovation (CII)", function(){
+        if(!fr||!inno||!imm)return 0;
+        // Le CII vise l'innovation produit/process : exclu si l'utilisateur n'a coché QUE sociale et/ou business
+        var techRelated = hasType('technologique')||hasType('technique')||hasType('ergonomique');
+        if(!techRelated)return 0;
+        if(team==='0')return 0;
+        return 70;
+      }],
+      ["Crédit d'impôt recherche (CIR)", function(){ if(!fr||!inno||!imm)return 0; if(!hasType('technologique'))return 0; if(use!=='randd')return 0; return 90; }],
       ["Aide à l'export (Chèque Relance Export)", function(){ if(!fr||!imm)return 0; if(st!=='export')return 0; return 80; }],
       ['Prêt Croissance Internationale BPI', function(){ if(!fr||!imm)return 0; if(st!=='export')return 0; if(team==='0')return 0; if(need==='0-50k')return 0; return 75; }],
       ['Garantie BPI', function(){ if(!fr||!imm)return 0; if(eq!=='0-10k'&&eq!=='10k-25k')return 0; if(need==='0-50k')return 0; return 60; }],
       ['FEDER', function(){ if(!fr||!inno)return 0; if(need!=='150k-300k'&&need!=='300k+')return 0; return 65; }],
-      ['Horizon Europe (EIC Accelerator)', function(){ if(!inno)return 0; if(t!=='technologique')return 0; if(need!=='300k+')return 0; return 70; }],
-      ["Aide à l'embauche", function(){ if(!fr||!imm)return 0; if(st!=='croissance'&&st!=='diversification')return 0; if(team==='0')return 0; return 55; }],
+      ['Horizon Europe (EIC Accelerator)', function(){ if(!inno)return 0; if(!hasType('technologique'))return 0; if(need!=='300k+')return 0; return 70; }],
+      ["Aide à l'embauche", function(){ if(!fr||!imm)return 0; if(st!=='croissance'&&st!=='diversification')return 0; if(team==='0')return 0; var s=55; if(use==='recrutement')s+=15; return s; }],
       ['Aide à la formation (OPCO/FNE)', function(){ if(!fr||!imm)return 0; if(team==='0')return 0; return 50; }],
       ["Prêt d'honneur", function(){ if(!fr||st!=='creation')return 0; if(eq!=='0-10k'&&eq!=='10k-25k')return 0; return 65; }]
     ];
@@ -158,11 +210,13 @@
   .opt:hover{ background:#e7ebf1; transform:translateX(3px); }\
   .opt.sel{ background:rgba(0,51,102,.05); border-color:#003366; color:#003366; }\
   .ck{ width:20px; height:20px; border-radius:50%; border:2px solid #dde3ec; flex-shrink:0; transition:.25s; position:relative; }\
+  .opt.multi .ck{ border-radius:5px; }\
   .opt.sel .ck{ border-color:#003366; background:#003366; }\
   .opt.sel .ck::after{ content:''; position:absolute; left:5px; top:2px; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }\
   .sub{ margin-top:1rem; padding:1.1rem; background:rgba(0,51,102,.035); border-radius:10px; display:none; }\
   .sub.active{ display:block; animation:fade .3s ease; }\
   .sub .question{ font-size:.98rem; margin-bottom:.9rem; }\
+  .sub-hint{ font-size:.78rem; color:#66707f; font-weight:500; margin-bottom:.8rem; }\
   .field{ margin-bottom:1.2rem; }\
   .label{ display:block; font-weight:600; font-size:.85rem; color:#003366; margin-bottom:.4rem; }\
   .input{ width:100%; padding:.85rem 1rem; border:2px solid #dde3ec; border-radius:10px; font-family:inherit; font-size:.97rem; color:#2a3340; background:#fff; transition:.25s; }\
@@ -198,8 +252,14 @@
   .blurred{ margin-top:1.2rem; padding:1rem; background:#f4f6f9; border-radius:10px; position:relative; overflow:hidden; }\
   .blur-ov{ position:absolute; inset:0; backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); background:rgba(255,255,255,.55); display:flex; align-items:center; justify-content:center; }\
   .blur-msg{ background:#003366; color:#fff; padding:.85rem 1.2rem; border-radius:8px; font-weight:600; font-size:.85rem; max-width:85%; text-align:center; line-height:1.4; }\
-  .cta-text{ font-size:.95rem; color:#66707f; margin:1.8rem 0 1.1rem; }\
-  .calendly{ display:inline-flex; align-items:center; gap:.5rem; background:#003366; color:#fff; text-decoration:none; padding:.95rem 2rem; border-radius:50px; font-weight:700; font-size:.97rem; transition:.25s; box-shadow:0 6px 18px rgba(0,51,102,.25); }\
+  .post{ margin-top:1.8rem; padding:1.2rem 1.3rem; background:linear-gradient(135deg,#003366,#1a4d80); color:#fff; border-radius:12px; text-align:left; box-shadow:0 8px 24px rgba(0,51,102,.18); }\
+  .post-head{ display:flex; align-items:center; gap:.6rem; font-weight:800; font-size:.95rem; margin-bottom:.5rem; }\
+  .post-head svg{ width:18px; height:18px; flex-shrink:0; color:#FFD700; }\
+  .post p{ font-size:.88rem; line-height:1.5; opacity:.95; }\
+  .post p + p{ margin-top:.6rem; }\
+  .post strong{ color:#FFD700; font-weight:700; }\
+  .cta-text{ font-size:.95rem; color:#66707f; margin:1.6rem 0 1rem; }\
+  .calendly{ display:inline-flex; align-items:center; gap:.5rem; background:#003366; color:#fff; text-decoration:none; padding:.95rem 2rem; border-radius:50px; font-weight:700; font-size:.97rem; transition:.25s; box-shadow:0 6px 18px rgba(0,51,102,.25); cursor:pointer; border:none; font-family:inherit; }\
   .calendly:hover{ background:#00254d; transform:translateY(-2px); }\
   .sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }\
   @keyframes spin{ to{ transform:rotate(360deg); } }\
@@ -217,7 +277,7 @@
     self.state = {
       current: 1, answers: {}, submitted: false, lastSubmit: 0,
       sessionId: 'btd_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9),
-      utm: self._getUTM ? self._getUTM() : { source:'direct', medium:'none', campaign:'none', referrer:'' }
+      utm: { source:'direct', medium:'none', campaign:'none', referrer:'' }
     };
     return self;
   };
@@ -230,8 +290,7 @@
     ensureFont();
     loadEmailJS();
     this.root = this.attachShadow({ mode: 'open' });
-    this._utm = this._getUTM();
-    this.state.utm = this._utm;
+    this.state.utm = this._getUTM();
     this._render();
     this._build();
     this._bind();
@@ -240,8 +299,7 @@
 
   BTDSimulator.prototype._getUTM = function () {
     try {
-      var s = window.location.search || '';
-      var p = new URLSearchParams(s);
+      var p = new URLSearchParams(window.location.search || '');
       return { source:p.get('utm_source')||'direct', medium:p.get('utm_medium')||'none', campaign:p.get('utm_campaign')||'none', referrer:document.referrer||'direct' };
     } catch(e){ return { source:'direct', medium:'none', campaign:'none', referrer:'' }; }
   };
@@ -277,8 +335,14 @@
           '<div class="r-sub">Selon tes réponses, ton projet pourrait être éligible aux dispositifs suivants :</div>' +
           '<div class="aids" id="aids"></div>' +
           '<div class="blurred" id="blurred" style="display:none"><div id="blurred-content"></div><div class="blur-ov"><div class="blur-msg">D\'autres aides semblent éligibles pour ton projet&nbsp;! Prends RDV pour une analyse complète.</div></div></div>' +
-          '<p class="cta-text">Pour approfondir et construire ta stratégie de financement, échange avec un expert BTD Consulting :</p>' +
-          '<a class="calendly" id="calendly" href="' + CONFIG.calendly + '" target="_blank" rel="noopener noreferrer">Prendre rendez-vous ' + ARROW + '</a>' +
+          // BLOC POST-RÉSULTATS (NOUVEAU)
+          '<div class="post">' +
+            '<div class="post-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 6h16v12H4z"/><path d="M4 6l8 7 8-7"/></svg>Vérifie tes spams</div>' +
+            '<p>Ton analyse vient d\'être envoyée par email. Si tu ne la reçois pas dans quelques minutes, pense à consulter ton dossier <strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.</p>' +
+            '<p>Pour qu\'on vérifie cette analyse ensemble et qu\'on te partage la <strong>liste complète des aides et des investisseurs</strong> adaptés à ton projet, prends rendez-vous avec un expert BTD Consulting&nbsp;:</p>' +
+          '</div>' +
+          '<p class="cta-text">Réserve un créneau gratuit avec un expert :</p>' +
+          '<button class="calendly" id="calendly" type="button">Prendre rendez-vous ' + ARROW + '</button>' +
         '</section>' +
       '</div>';
     this.root.appendChild(wrap);
@@ -297,9 +361,16 @@
 
       var sub = '';
       if (q.sub) {
-        sub = '<div class="sub" id="sub-' + n + '"><div class="question">' + esc(q.sub.q) + '</div><div class="opts">' +
-          q.sub.o.map(function (o) { return '<button type="button" class="opt" data-sub="' + esc(q.sub.key) + '" data-val="' + esc(o[0]) + '"><span>' + esc(o[1]) + '</span><span class="ck"></span></button>'; }).join('') +
-          '</div></div>';
+        var multiCls = q.sub.multi ? ' multi' : '';
+        var hint = q.sub.multi ? '<div class="sub-hint">Coche toutes les options qui correspondent à ton projet.</div>' : '';
+        sub = '<div class="sub" id="sub-' + n + '">' +
+              '<div class="question">' + esc(q.sub.q) + '</div>' +
+              hint +
+              '<div class="opts">' +
+              q.sub.o.map(function (o) {
+                return '<button type="button" class="opt' + multiCls + '" data-sub="' + esc(q.sub.key) + '" data-val="' + esc(o[0]) + '"><span>' + esc(o[1]) + '</span><span class="ck"></span></button>';
+              }).join('') +
+              '</div></div>';
       }
 
       card.innerHTML =
@@ -352,36 +423,96 @@
       if (e.target.matches('#fn,#ln,#ph,#em')) self._validateForm();
     });
 
-    this.$('calendly').addEventListener('click', function () { track('calendly_click', {}); });
+    // Calendly : window.open() FORCÉ pour contourner les blocages d'ancres dans certains contextes Shadow DOM/iframe
+    this.$('calendly').addEventListener('click', function (e) {
+      e.preventDefault();
+      track('calendly_click', {});
+      try {
+        var win = window.open(CONFIG.calendly, '_blank', 'noopener,noreferrer');
+        // Fallback si popup bloquée : navigation directe
+        if (!win) window.location.href = CONFIG.calendly;
+      } catch (err) {
+        window.location.href = CONFIG.calendly;
+      }
+    });
   };
 
+  /* ----- SÉLECTION D'UNE OPTION (gère single + multi) ----- */
   BTDSimulator.prototype._pick = function (btn) {
-    var box = btn.parentElement;
-    box.querySelectorAll('.opt').forEach(function (b) { b.classList.remove('sel'); });
-    btn.classList.add('sel');
     var card = btn.closest('.step');
+    var key  = btn.dataset.sub;
+    var val  = btn.dataset.val;
+    var isMulti = btn.classList.contains('multi');
 
-    if (btn.dataset.sub) {
-      this.state.answers[btn.dataset.sub] = btn.dataset.val;
-      card.querySelector('.next').disabled = false;
-    } else {
-      var n = parseInt(btn.dataset.q, 10);
-      this.state.answers[n] = btn.dataset.val;
-      card.querySelector('.next').disabled = false;
-      var q = QUESTIONS[n - 1];
-      if (q && q.sub) {
-        var sub = this.$('sub-' + n);
-        if (btn.dataset.val === q.sub.trigger) {
-          sub.classList.add('active');
-          card.querySelector('.next').disabled = !this.state.answers[q.sub.key];
-        } else {
-          sub.classList.remove('active');
-          delete this.state.answers[q.sub.key];
-        }
-      }
-      track('question_answered', { question: n, answer: btn.dataset.val });
+    // -------- Cas 1 : sous-option MULTI-select --------
+    if (key && isMulti) {
+      var current = this.state.answers[key];
+      if (!Array.isArray(current)) current = current ? [current] : [];
+      var idx = current.indexOf(val);
+      if (idx > -1) { current.splice(idx, 1); btn.classList.remove('sel'); }
+      else { current.push(val); btn.classList.add('sel'); }
+      this.state.answers[key] = current;
+
+      // On ré-évalue l'état du bouton "Suivant"
+      this._refreshNext(card);
+      this._save();
+      return;
     }
+
+    // -------- Cas 2 : sous-option SINGLE-select (legacy) --------
+    if (key) {
+      var box = btn.parentElement;
+      box.querySelectorAll('.opt').forEach(function (b) { b.classList.remove('sel'); });
+      btn.classList.add('sel');
+      this.state.answers[key] = val;
+      this._refreshNext(card);
+      this._save();
+      return;
+    }
+
+    // -------- Cas 3 : question principale (single) --------
+    var parent = btn.parentElement;
+    parent.querySelectorAll('.opt').forEach(function (b) { b.classList.remove('sel'); });
+    btn.classList.add('sel');
+
+    var n = parseInt(btn.dataset.q, 10);
+    this.state.answers[n] = val;
+
+    var q = QUESTIONS[n - 1];
+    if (q && q.sub) {
+      var sub = this.$('sub-' + n);
+      if (val === q.sub.trigger) {
+        sub.classList.add('active');
+      } else {
+        sub.classList.remove('active');
+        delete this.state.answers[q.sub.key];
+        // Désélectionner les sous-options visuellement
+        sub.querySelectorAll('.opt').forEach(function (b) { b.classList.remove('sel'); });
+      }
+    }
+    this._refreshNext(card);
+    track('question_answered', { question: n, answer: val });
     this._save();
+  };
+
+  /* ----- Active/désactive le bouton "Suivant" selon l'état complet de la carte ----- */
+  BTDSimulator.prototype._refreshNext = function (card) {
+    var n = parseInt(card.getAttribute('data-step'), 10);
+    var nextBtn = card.querySelector('.next');
+    if (!nextBtn) return;
+
+    var q = QUESTIONS[n - 1];
+    var mainAns = this.state.answers[n];
+
+    if (!mainAns) { nextBtn.disabled = true; return; }
+
+    if (q && q.sub && mainAns === q.sub.trigger) {
+      var subAns = this.state.answers[q.sub.key];
+      var hasSub = Array.isArray(subAns) ? subAns.length > 0 : !!subAns;
+      nextBtn.disabled = !hasSub;
+    } else {
+      nextBtn.disabled = false;
+    }
   };
 
   BTDSimulator.prototype._start = function () {
@@ -398,19 +529,23 @@
     card.classList.add('active');
     this.state.current = n;
 
+    // Restaurer sélections
     var ans = this.state.answers[n];
     if (ans) {
       var b = card.querySelector('.opt[data-val="' + ans + '"][data-q]');
-      if (b) { b.classList.add('sel'); card.querySelector('.next').disabled = false; }
+      if (b) b.classList.add('sel');
       var q = QUESTIONS[n - 1];
       if (q && q.sub && ans === q.sub.trigger) {
         this.$('sub-' + n).classList.add('active');
-        if (this.state.answers[q.sub.key]) {
-          var sb = card.querySelector('.opt[data-sub][data-val="' + this.state.answers[q.sub.key] + '"]');
+        var subAns = this.state.answers[q.sub.key];
+        var subArr = Array.isArray(subAns) ? subAns : (subAns ? [subAns] : []);
+        subArr.forEach(function (v) {
+          var sb = card.querySelector('.opt[data-sub][data-val="' + v + '"]');
           if (sb) sb.classList.add('sel');
-        }
+        });
       }
     }
+    this._refreshNext(card);
     this._scrollTop();
     this._say('Question ' + n + ' sur ' + (QUESTIONS.length + 1));
   };
@@ -433,7 +568,7 @@
     var self = this;
     var now = Date.now();
     if (this.state.submitted || (now - this.state.lastSubmit) < CONFIG.cooldownMs) return;
-    if (this.$('hp') && this.$('hp').value !== '') return; // honeypot
+    if (this.$('hp') && this.$('hp').value !== '') return;
     this.state.lastSubmit = now;
 
     var a = this.state.answers;
@@ -483,13 +618,18 @@
   // Make webhook — champs d'origine conservés + payload enrichi
   BTDSimulator.prototype._sendMake = function (aids) {
     var a = this.state.answers, u = this.state.utm;
+    var innovTypes = a['innovation-type'];
+    if (!Array.isArray(innovTypes)) innovTypes = innovTypes ? [innovTypes] : [];
+
     var payload = {
       firstname: a.firstname, lastname: a.lastname, email: a.email, phone: a.phone,
       eligible_aids: aids, aids_count: aids.length,
       utm_source: u.source, utm_medium: u.medium, utm_campaign: u.campaign,
       reponses: {
         immatriculee: a[1], stade: a[2], deja_finance: a[3], equipe: a[4],
-        innovation: a[5], innovation_type: a['innovation-type'] || null,
+        innovation: a[5],
+        innovation_type: innovTypes,                // tableau désormais
+        innovation_type_str: innovTypes.join(', '), // version texte pour Mailchimp
         accompagnement: a[6], france: a[7], besoin: a[8], usage: a[9], fonds_propres: a[10]
       },
       timestamp: new Date().toISOString()
