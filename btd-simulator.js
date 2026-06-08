@@ -662,7 +662,7 @@
     if (!window.emailjs) return Promise.reject(new Error('EmailJS absent'));
     var message = aids.map(function (x) { return '• ' + x + ': ' + (DESC[x] || ''); }).join('\n\n');
     return window.emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateId, {
-      email: a.email, message: message, firstname: a.firstname, aids_count: aids.length
+      email: a.email, message: message, firstname: a.firstname, aids_count: aids.length, aids_html: aids.map(function(x){return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f6f9;border-left:4px solid #FFD700;border-radius:8px;margin-bottom:10px;"><tr><td style="padding:14px 18px;"><p style="margin:0 0 4px 0;color:#003366;font-weight:700;font-size:15px;font-family:Montserrat,Arial,sans-serif;">'+x+'</p><p style="margin:0;color:#66707f;font-size:13px;line-height:1.5;font-family:Montserrat,Arial,sans-serif;">'+(DESC[x]||'')+'</p></td></tr></table>';}).join(''), calendly_url: CONFIG.calendly
     });
   };
 
