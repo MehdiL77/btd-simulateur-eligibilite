@@ -50,7 +50,51 @@
     calendlyJs:  'https://assets.calendly.com/assets/external/widget.js',
     maxVisible:      4,                 // dispositifs publics affichés en clair
     maxVisiblePrive: 3,                 // investisseurs affichés en clair
-    cooldownMs:  5000
+    cooldownMs:  5000,
+
+    /* -------------------------------------------------------------------------
+       BASE NOTION offerte en fin de parcours privé
+       « Du public au privé : toutes les options de financement (2025-2026) »
+
+       ⚠️ L'URL doit être le lien PUBLIC de la page (Notion > Partager >
+       Publier sur le web > copier le lien, en *.notion.site).
+       Un lien app.notion.com/p/... est le lien interne de l'espace de travail :
+       les leads qui n'ont pas accès à ton workspace tombent sur un mur de
+       connexion et le cadeau ne leur parvient jamais.
+       ------------------------------------------------------------------------- */
+    notionDb: {
+      url:     'https://app.notion.com/p/Du-public-au-priv-toutes-les-options-de-financement-2025-2026-26acda9001ba80bfb163ee1555ca5c2d',
+      titre:   'Du public au privé : toutes les options de financement 2025-2026',
+      surPublic: false                  // true pour l'offrir aussi au parcours public
+    },
+
+    /* -------------------------------------------------------------------------
+       MAILCHIMP — piloté depuis Make, pas d'appel direct depuis le navigateur.
+       Le widget se contente d'envoyer dans le webhook un bloc "mailchimp" prêt
+       à mapper : tags, parcours (customer journey) et merge fields.
+
+       ⚠️ REMPLACE les libellés ci-dessous par les valeurs EXACTES de ton compte
+       Mailchimp (un tag qui n'existe pas est créé à la volée, un tag mal
+       orthographié ne déclenchera aucun parcours).
+       ------------------------------------------------------------------------- */
+    mailchimp: {
+      // Tag principal de chaque parcours (celui qui déclenche la série de NL)
+      tagPublic: 'Simulateur - Financement public',
+      tagPrive:  'Simulateur - Levee de fonds',
+
+      // Tag posé quand la même personne fait AUSSI l'autre parcours dans la session.
+      // Sert à éviter qu'elle reçoive deux séries de newsletters en parallèle.
+      tagMixte:  'Simulateur - Double parcours',
+
+      // Tags secondaires de qualification (mets false pour n'envoyer que le tag principal)
+      tagsQualification: true,
+
+      // Customer Journey déclenché par API plutôt que par tag : renseigne les ID
+      // relevés dans Mailchimp (Parcours > ... > Utiliser l'API). Laisse vide si
+      // ton parcours démarre sur "Tag ajouté" — c'est le montage recommandé.
+      journeyPublic: { id: '', stepId: '' },
+      journeyPrive:  { id: '', stepId: '' }   // parcours "Dataroom"
+    }
   };
 
   /* =============================================================================
@@ -197,17 +241,23 @@
     { id:3, q:"Dans quel secteur évolues-tu ?", grid:true,
       o:[
         ['saas',"Logiciel / SaaS B2B"],
+        ['ia',"Intelligence artificielle"],
+        ['deeptech',"Deeptech / Hardware"],
         ['marketplace',"Marketplace / Plateforme"],
         ['ecommerce',"E-commerce / Marque DTC"],
         ['fintech',"Fintech / Assurtech"],
-        ['sante',"Santé / Biotech / Medtech"],
-        ['deeptech',"Deeptech / Hardware / IA"],
-        ['greentech',"Greentech / Énergie / Climat"],
-        ['foodtech',"Foodtech / Agritech"],
-        ['mobilite',"Mobilité / Logistique"],
-        ['edtech',"Edtech / RH / Formation"],
-        ['media',"Média / Gaming / Divertissement"],
-        ['industrie',"Industrie / BTP / Services B2B"],
+        ['medtech',"Santé / MedTech"],
+        ['biotech',"Biotech / Pharma"],
+        ['greentech',"Environnement / Énergie / Climat"],
+        ['agritech',"AgriTech"],
+        ['foodtech',"FoodTech"],
+        ['mobilite',"Transport & mobilités"],
+        ['edtech',"EdTech / Formation"],
+        ['industrie',"Industriel"],
+        ['btp',"BTP / Construction"],
+        ['creative',"Industrie créative / Jeux vidéo"],
+        ['ess',"ESS / Impact social"],
+        ['service',"Services aux entreprises"],
         ['autre',"Autre secteur"]
       ] },
     { id:4, q:"Quelle est ta traction commerciale ?",
@@ -279,6 +329,40 @@
   ];
 
   /* -----------------------------------------------------------------------------
+     CORRESPONDANCE SECTEUR SIMULATEUR -> SECTEURS DE LA BASE NOTION
+     -----------------------------------------------------------------------------
+     La question du simulateur reste courte et lisible ; la base Notion, elle,
+     découpe plus finement (24 secteurs). Cette table fait le pont : le payload
+     envoie les noms EXACTS des secteurs Notion, ce qui permet de filtrer la base
+     ou de personnaliser une newsletter sans retraitement.
+
+     Un choix peut viser plusieurs secteurs Notion (ex. « Environnement / Énergie »
+     couvre Environnement, Transition écologique et Énergies renouvelables).
+     Si tu renommes un secteur dans Notion, mets à jour la valeur ici.
+     ----------------------------------------------------------------------------- */
+  var SECTEUR_NOTION = {
+    saas:        ['Digital / SaaS'],
+    ia:          ['IA', 'Deeptech'],
+    deeptech:    ['Deeptech'],
+    marketplace: ['Digital / SaaS'],
+    ecommerce:   ['Généraliste'],
+    fintech:     ['FinTech'],
+    medtech:     ['MedTech'],
+    biotech:     ['BioTech'],
+    greentech:   ['Environnement', 'Transition écologique', 'Energies renouvelables'],
+    agritech:    ['AgriTech'],
+    foodtech:    ['FoodTech'],
+    mobilite:    ['Transport & mobilités'],
+    edtech:      ['EdTech'],
+    industrie:   ['Industriel'],
+    btp:         ['BTP'],
+    creative:    ['Industrie créative', 'Jeux vidéos', 'Cinéma', 'Culture'],
+    ess:         ['ESS'],
+    service:     ['Service', 'LegalTech'],
+    autre:       ['Généraliste']
+  };
+
+  /* -----------------------------------------------------------------------------
      BASE INVESTISSEURS — ⚠️ JEU DE DÉMONSTRATION
      -----------------------------------------------------------------------------
      Les noms ci-dessous sont réels, mais les critères (tickets, stades, secteurs)
@@ -309,88 +393,88 @@
       sectors:['all'], geos:['all'], theses:['international'],
       desc:"Fonds très actif en pre-seed, tickets standardisés et décision rapide, tous secteurs tech." },
     { name:"Frst", type:'vc', stages:['pre-seed','seed'], ticketMin:300000, ticketMax:1500000,
-      sectors:['saas','marketplace','fintech','deeptech','industrie'], geos:['idf','region','europe'], theses:[],
+      sectors:['saas','marketplace','fintech','deeptech','ia','industrie','service'], geos:['idf','region','europe'], theses:[],
       desc:"Fonds pre-seed français, premier chèque institutionnel sur des projets tech ambitieux." },
     { name:"Founders Future", type:'vc', stages:['pre-seed','seed'], ticketMin:200000, ticketMax:1500000,
-      sectors:['saas','marketplace','ecommerce','fintech','edtech'], geos:['idf','region'], theses:[],
+      sectors:['saas','marketplace','ecommerce','fintech','edtech','ia','service'], geos:['idf','region'], theses:[],
       desc:"Startup studio et fonds d'amorçage, accompagnement opérationnel des fondateurs." },
     { name:"Breega", type:'vc', stages:['pre-seed','seed','serie-a'], ticketMin:500000, ticketMax:5000000,
-      sectors:['saas','fintech','deeptech','marketplace','greentech'], geos:['idf','region','europe'], theses:['international'],
+      sectors:['saas','fintech','deeptech','ia','marketplace','greentech'], geos:['idf','region','europe'], theses:['international'],
       desc:"Fonds européen early-stage avec une équipe support (RH, marketing, finance) pour les participations." },
     { name:"Alven", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:10000000,
-      sectors:['saas','marketplace','fintech','media'], geos:['idf','region','europe'], theses:['international'],
+      sectors:['saas','marketplace','fintech','ia','creative'], geos:['idf','region','europe'], theses:['international'],
       desc:"Fonds de référence sur le logiciel et les plateformes, du seed à la série A.", minTraction:'10-100k' },
     { name:"Partech", type:'vc', stages:['seed','serie-a','serie-b'], ticketMin:500000, ticketMax:15000000,
       sectors:['all'], geos:['idf','region','europe','hors-europe'], theses:['international'],
       desc:"Fonds international, du seed au growth, forte capacité de réinvestissement.", minTraction:'10-100k' },
     { name:"Serena", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:8000000,
-      sectors:['saas','deeptech','industrie','greentech'], geos:['idf','region','europe'], theses:['deeptech'],
+      sectors:['saas','deeptech','ia','industrie','greentech','service'], geos:['idf','region','europe'], theses:['deeptech'],
       desc:"Fonds tech B2B et data, accompagnement structuré des équipes.", minTraction:'100-500k' },
     { name:"Daphni", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:8000000,
-      sectors:['saas','marketplace','ecommerce','greentech','sante'], geos:['idf','region','europe'], theses:['impact','international'],
+      sectors:['saas','marketplace','ecommerce','greentech','medtech','ia'], geos:['idf','region','europe'], theses:['impact','international'],
       desc:"Fonds européen orienté usages et transitions, communauté d'experts très active.", minTraction:'10-100k' },
     { name:"Elaia Partners", type:'vc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:10000000,
-      sectors:['saas','deeptech','sante','industrie'], geos:['idf','region','europe'], theses:['deeptech'],
+      sectors:['saas','deeptech','ia','medtech','biotech','industrie'], geos:['idf','region','europe'], theses:['deeptech'],
       desc:"Fonds deeptech et B2B, forte proximité avec les laboratoires de recherche." },
     { name:"Newfund", type:'vc', stages:['pre-seed','seed'], ticketMin:300000, ticketMax:2000000,
       sectors:['all'], geos:['idf','region','hors-europe'], theses:['regional'],
       desc:"Fonds d'amorçage présent en régions et aux États-Unis, tous secteurs." },
     { name:"Ovni Capital", type:'vc', stages:['pre-seed','seed'], ticketMin:200000, ticketMax:1000000,
-      sectors:['saas','marketplace','fintech','edtech'], geos:['idf','region'], theses:['international'],
+      sectors:['saas','marketplace','fintech','edtech','ia'], geos:['idf','region'], theses:['international'],
       desc:"Fonds pre-seed dédié aux startups françaises à vocation internationale dès le départ." },
     { name:"Otium Capital", type:'fo', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:10000000,
-      sectors:['ecommerce','foodtech','sante','media','marketplace'], geos:['idf','region'], theses:[],
+      sectors:['ecommerce','foodtech','medtech','creative','marketplace','service'], geos:['idf','region'], theses:[],
       desc:"Family office entrepreneurial, investissement long terme sans contrainte de cycle de fonds.", minTraction:'100-500k' },
     { name:"Ring Capital", type:'vc', stages:['serie-a','serie-b'], ticketMin:2000000, ticketMax:15000000,
-      sectors:['saas','greentech','sante','edtech','industrie'], geos:['idf','region'], theses:['impact'],
+      sectors:['saas','greentech','medtech','edtech','industrie','ess'], geos:['idf','region'], theses:['impact'],
       desc:"Fonds impact growth, accompagne les scale-ups à mission après leur seed.", minTraction:'500k+' },
     { name:"Citizen Capital", type:'vc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:5000000,
-      sectors:['sante','edtech','greentech','industrie','saas'], geos:['idf','region'], theses:['impact','diversite'],
+      sectors:['medtech','edtech','greentech','industrie','saas','ess'], geos:['idf','region'], theses:['impact','diversite'],
       desc:"Fonds à impact, thèse sociale et environnementale avec mesure d'impact formalisée." },
     { name:"INCO Ventures", type:'vc', stages:['pre-seed','seed'], ticketMin:100000, ticketMax:1500000,
-      sectors:['greentech','foodtech','edtech','sante','industrie'], geos:['idf','region','dom'], theses:['impact','regional'],
+      sectors:['greentech','foodtech','agritech','edtech','medtech','industrie','ess'], geos:['idf','region','dom'], theses:['impact','regional'],
       desc:"Investisseur à impact, transition écologique et inclusion, présent en régions et outre-mer." },
     { name:"Demeter", type:'vc', stages:['serie-a','serie-b'], ticketMin:1000000, ticketMax:15000000,
-      sectors:['greentech','mobilite','industrie','deeptech'], geos:['idf','region','europe'], theses:['impact','industriel'],
+      sectors:['greentech','mobilite','industrie','deeptech','btp'], geos:['idf','region','europe'], theses:['impact','industriel'],
       desc:"Fonds spécialisé transition écologique, énergie et mobilité durable.", minTraction:'100-500k' },
     { name:"Supernova Invest", type:'vc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:8000000,
-      sectors:['deeptech','sante','greentech','industrie'], geos:['idf','region'], theses:['deeptech'],
+      sectors:['deeptech','ia','medtech','biotech','greentech','industrie'], geos:['idf','region'], theses:['deeptech'],
       desc:"Fonds deeptech adossé au CEA, projets à forte intensité technologique et scientifique." },
     { name:"Karista", type:'vc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:5000000,
-      sectors:['sante','deeptech','saas'], geos:['idf','region','europe'], theses:['deeptech'],
+      sectors:['medtech','biotech','deeptech','ia','saas'], geos:['idf','region','europe'], theses:['deeptech'],
       desc:"Fonds early-stage santé numérique, medtech et technologies de rupture." },
     { name:"Kurma Partners", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:15000000,
-      sectors:['sante'], geos:['idf','region','europe'], theses:['deeptech'],
+      sectors:['medtech','biotech'], geos:['idf','region','europe'], theses:['deeptech'],
       desc:"Fonds spécialisé biotech, medtech et santé numérique, du prégermination à la série A." },
     { name:"Sofinnova Partners", type:'vc', stages:['serie-a','serie-b'], ticketMin:3000000, ticketMax:30000000,
-      sectors:['sante','greentech','deeptech'], geos:['idf','region','europe'], theses:['deeptech'],
+      sectors:['biotech','medtech','greentech','deeptech'], geos:['idf','region','europe'], theses:['deeptech'],
       desc:"Fonds life sciences de référence en Europe, tickets importants sur des projets scientifiques." },
     { name:"Five Seasons Ventures", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:10000000,
-      sectors:['foodtech','ecommerce'], geos:['idf','region','europe'], theses:['impact'],
+      sectors:['foodtech','agritech','ecommerce'], geos:['idf','region','europe'], theses:['impact'],
       desc:"Fonds européen dédié à l'alimentation et aux marques food innovantes.", minTraction:'100-500k' },
     { name:"Astanor Ventures", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:15000000,
-      sectors:['foodtech','greentech'], geos:['idf','region','europe','hors-europe'], theses:['impact','international'],
+      sectors:['foodtech','agritech','greentech'], geos:['idf','region','europe','hors-europe'], theses:['impact','international'],
       desc:"Fonds agritech et foodtech à impact, thèse systèmes alimentaires durables." },
     { name:"Eutopia", type:'vc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:5000000,
-      sectors:['ecommerce','foodtech','media'], geos:['idf','region','europe'], theses:[],
+      sectors:['ecommerce','foodtech','creative'], geos:['idf','region','europe'], theses:[],
       desc:"Fonds dédié aux marques et au consumer, expertise retail et distribution.", minTraction:'100-500k' },
     { name:"Aster Capital", type:'cvc', stages:['serie-a','serie-b'], ticketMin:2000000, ticketMax:15000000,
-      sectors:['greentech','industrie','mobilite','deeptech'], geos:['idf','region','europe'], theses:['industriel','impact'],
+      sectors:['greentech','industrie','mobilite','deeptech','btp'], geos:['idf','region','europe'], theses:['industriel','impact'],
       desc:"Fonds corporate adossé à des industriels de l'énergie et de l'industrie.", minTraction:'100-500k' },
     { name:"Orange Ventures", type:'cvc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:10000000,
-      sectors:['saas','fintech','deeptech','media','sante'], geos:['idf','region','europe'], theses:['industriel'],
+      sectors:['saas','fintech','deeptech','ia','creative','medtech'], geos:['idf','region','europe'], theses:['industriel'],
       desc:"Corporate venture d'un opérateur télécom, accès à un réseau de distribution grand compte." },
     { name:"MAIF Impact", type:'cvc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:5000000,
-      sectors:['sante','greentech','edtech','mobilite'], geos:['idf','region'], theses:['impact','industriel'],
+      sectors:['medtech','greentech','edtech','mobilite','ess'], geos:['idf','region'], theses:['impact','industriel'],
       desc:"Fonds corporate à impact d'un assureur mutualiste, projets d'utilité sociale." },
     { name:"Go Capital", type:'vc', stages:['pre-seed','seed','serie-a'], ticketMin:300000, ticketMax:5000000,
-      sectors:['deeptech','sante','saas','industrie','greentech'], geos:['region'], theses:['regional','deeptech'],
+      sectors:['deeptech','ia','medtech','biotech','saas','industrie','greentech'], geos:['region'], theses:['regional','deeptech'],
       desc:"Fonds régional du Grand Ouest, amorçage deeptech et innovation territoriale." },
     { name:"IRDI Capital Investissement", type:'vc', stages:['seed','serie-a'], ticketMin:300000, ticketMax:5000000,
       sectors:['all'], geos:['region'], theses:['regional'],
       desc:"Fonds régional Occitanie et Nouvelle-Aquitaine, généraliste avec volet innovation." },
     { name:"Kreaxi", type:'vc', stages:['pre-seed','seed'], ticketMin:200000, ticketMax:3000000,
-      sectors:['deeptech','sante','industrie','saas'], geos:['region'], theses:['regional','deeptech'],
+      sectors:['deeptech','ia','medtech','industrie','saas','btp'], geos:['region'], theses:['regional','deeptech'],
       desc:"Fonds d'amorçage Auvergne-Rhône-Alpes, technologies et industrie." },
     { name:"Sofimac Innovation", type:'vc', stages:['pre-seed','seed'], ticketMin:200000, ticketMax:3000000,
       sectors:['all'], geos:['region'], theses:['regional'],
@@ -402,25 +486,25 @@
       sectors:['all'], geos:['idf','region'], theses:['diversite'],
       desc:"Réseau de business angels investissant en priorité dans des équipes fondées par des femmes." },
     { name:"Angels Santé", type:'ba', stages:['pre-seed','seed'], ticketMin:50000, ticketMax:500000,
-      sectors:['sante'], geos:['idf','region'], theses:['deeptech'],
+      sectors:['medtech','biotech'], geos:['idf','region'], theses:['deeptech'],
       desc:"Réseau de business angels spécialisé santé, medtech et biotech." },
     { name:"Investir&+", type:'ba', stages:['pre-seed','seed','serie-a'], ticketMin:100000, ticketMax:1000000,
-      sectors:['greentech','sante','edtech','foodtech','industrie'], geos:['idf','region'], theses:['impact'],
+      sectors:['greentech','medtech','edtech','foodtech','agritech','industrie','ess'], geos:['idf','region'], theses:['impact'],
       desc:"Collectif d'investisseurs à impact, entrepreneuriat social et transition." },
     { name:"WiSEED", type:'crowd', stages:['pre-seed','seed','serie-a'], ticketMin:100000, ticketMax:3000000,
-      sectors:['greentech','sante','industrie','ecommerce','mobilite'], geos:['idf','region','dom'], theses:['impact','regional'],
+      sectors:['greentech','medtech','industrie','ecommerce','mobilite','btp','ess'], geos:['idf','region','dom'], theses:['impact','regional'],
       desc:"Plateforme de financement participatif en capital et en obligations, forte communauté." },
     { name:"Tudigo", type:'crowd', stages:['love-money','pre-seed','seed'], ticketMin:50000, ticketMax:1500000,
-      sectors:['ecommerce','foodtech','greentech','media','industrie'], geos:['idf','region'], theses:['regional','impact'],
+      sectors:['ecommerce','foodtech','greentech','creative','industrie','service'], geos:['idf','region'], theses:['regional','impact'],
       desc:"Crowdequity orienté marques et projets à ancrage local, campagne publique mobilisatrice." },
     { name:"Sowefund", type:'crowd', stages:['pre-seed','seed'], ticketMin:100000, ticketMax:1500000,
       sectors:['all'], geos:['idf','region'], theses:[],
       desc:"Plateforme de crowdequity co-investissant aux côtés de business angels et de fonds." },
     { name:"LITA.co", type:'crowd', stages:['pre-seed','seed','serie-a'], ticketMin:100000, ticketMax:2000000,
-      sectors:['greentech','foodtech','sante','edtech'], geos:['idf','region'], theses:['impact'],
+      sectors:['greentech','foodtech','agritech','medtech','edtech','ess'], geos:['idf','region'], theses:['impact'],
       desc:"Plateforme d'investissement à impact, sélection exigeante sur les critères ESG." },
     { name:"Silvr", type:'debt', stages:['seed','serie-a','serie-b'], ticketMin:50000, ticketMax:5000000,
-      sectors:['saas','ecommerce','marketplace','media'], geos:['idf','region','europe'], theses:[],
+      sectors:['saas','ecommerce','marketplace','creative'], geos:['idf','region','europe'], theses:[],
       desc:"Financement non dilutif basé sur les revenus, adapté au SaaS et à l'e-commerce.", minTraction:'100-500k' },
     { name:"Karmen", type:'debt', stages:['seed','serie-a'], ticketMin:50000, ticketMax:3000000,
       sectors:['saas','marketplace','ecommerce'], geos:['idf','region'], theses:[],
@@ -815,6 +899,13 @@
   .unlock h3{ font-size:.95rem; font-weight:800; margin-bottom:.4rem; }\
   .unlock p{ font-size:.86rem; line-height:1.5; opacity:.95; }\
   .unlock strong{ color:#FFD700; }\
+  .gift{ margin-top:1.4rem; padding:1.3rem 1.35rem; background:#fffdf2; border:2px solid #FFD700; border-radius:12px; text-align:left; }\
+  .gift-head{ display:flex; align-items:center; gap:.55rem; font-weight:800; font-size:.98rem; color:#003366; margin-bottom:.5rem; }\
+  .gift-head svg{ width:19px; height:19px; flex-shrink:0; color:#c9a400; }\
+  .gift p{ font-size:.87rem; color:#5a6472; line-height:1.55; margin-bottom:.5rem; }\
+  .gift-secteur{ font-size:.82rem; color:#003366; font-weight:700; margin-bottom:1rem; }\
+  .gift-btn{ display:inline-flex; align-items:center; gap:.5rem; background:#FFD700; color:#003366; padding:.8rem 1.5rem; border-radius:50px; font-weight:800; font-size:.92rem; text-decoration:none; transition:.25s; }\
+  .gift-btn:hover{ background:#e6c200; transform:translateY(-2px); }\
   .post{ margin-top:1.8rem; padding:1.2rem 1.3rem; background:linear-gradient(135deg,#003366,#1a4d80); color:#fff; border-radius:12px; text-align:left; box-shadow:0 8px 24px rgba(0,51,102,.18); }\
   .post-head{ display:flex; align-items:center; gap:.6rem; font-weight:800; font-size:.95rem; margin-bottom:.5rem; }\
   .post-head svg{ width:18px; height:18px; flex-shrink:0; color:#FFD700; }\
@@ -843,6 +934,7 @@
     gov:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6"/></svg>',
     rocket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 15l-2 6 6-2M14.5 3.5c3 0 6 3 6 6 0 4-5.5 9-8 10.5L8 16 4 12C5.5 9.5 10.5 3.5 14.5 3.5z"/><circle cx="14.5" cy="9.5" r="1.6"/></svg>',
     padlock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
+    gift:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 12h18M12 8v13"/><path d="M12 8S9.5 3.5 7 5s1 3 5 3zM12 8s2.5-4.5 5-3-1 3-5 3z"/></svg>',
     mail:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 6h16v12H4z"/><path d="M4 6l8 7 8-7"/></svg>'
   };
   function badgeHtml(b){ return '<span class="badge">' + (ICONS[b[0]]||'') + esc(b[1]) + '</span>'; }
@@ -853,7 +945,7 @@
   var BTDSimulator = function () {
     var self = Reflect.construct(HTMLElement, [], BTDSimulator);
     self.state = {
-      track: null, current: 1, answers: {}, contact: {},
+      track: null, current: 1, answers: {}, contact: {}, completed: [],
       submitted: false, lastSubmit: 0,
       sessionId: 'btd_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9),
       utm: { source:'direct', medium:'none', campaign:'none', referrer:'' }
@@ -969,6 +1061,12 @@
           '<div class="unlock" id="unlock" style="display:none">' +
             '<h3 id="unlock-title"></h3>' +
             '<p>Le détail de ces investisseurs (nom, contact, thèse, tickets et process d\'entrée) te sera présenté lors de ton <strong>rendez-vous gratuit</strong> avec un expert BTD Consulting.</p>' +
+          '</div>' +
+          '<div class="gift" id="gift" style="display:none">' +
+            '<div class="gift-head">' + ICONS.gift + 'Ta base de données financement est offerte</div>' +
+            '<p>Plus de 100 dispositifs publics et 50 solutions de levée de fonds — subventions, concours, prêts d\'honneur, fonds d\'investissement et business angels — centralisés et classés par secteur.</p>' +
+            '<div class="gift-secteur" id="gift-secteur"></div>' +
+            '<a class="gift-btn" id="gift-link" target="_blank" rel="noopener noreferrer">Ouvrir la base ' + ARROW + '</a>' +
           '</div>' +
           '<div class="post">' +
             '<div class="post-head">' + ICONS.mail + 'Vérifie tes spams</div>' +
@@ -1401,7 +1499,10 @@
             readiness_score: rd.score,
             readiness_label: rd.label,
             aids_html: visible.map(function (x) { return emailCard(x.name + ' — ' + x.typeLabel + ' (' + x.ticket + ')', x.desc); }).join(''),
-            calendly_url: CONFIG.calendlyPrive || CONFIG.calendly
+            calendly_url: CONFIG.calendlyPrive || CONFIG.calendly,
+            notion_url: CONFIG.notionDb.url || '',
+            notion_titre: CONFIG.notionDb.titre || '',
+            secteur_notion: (SECTEUR_NOTION[a[3]] || []).join(', ')
           }
         }),
         self._sendMake(CONFIG.makeWebhookPrive || CONFIG.makeWebhook, payload)
@@ -1458,6 +1559,8 @@
         for (var k in extra) { if (Object.prototype.hasOwnProperty.call(extra, k)) ev[k] = extra[k]; }
         track('lead_submit', ev);
         self.state.submitted = true;
+        if (self.state.completed.indexOf(self.state.track) === -1) self.state.completed.push(self.state.track);
+        self._saveDone();
         self._clearSave();
         onOk();
       });
@@ -1482,9 +1585,47 @@
     }).then(function (res) { if (!res.ok) throw new Error('Make ' + res.status); return res; });
   };
 
+  /* -----------------------------------------------------------------------------
+     BLOC MAILCHIMP
+     -----------------------------------------------------------------------------
+     Construit un objet directement mappable dans le module Make
+     « Mailchimp > Add/Update a Subscriber » :
+       payload.mailchimp.email          -> Email Address
+       payload.mailchimp.status         -> Status (subscribed)
+       payload.mailchimp.tags           -> Tags (collection)
+       payload.mailchimp.merge_fields.* -> Merge Fields (FNAME, LNAME, …)
+
+     Le tag principal est ce qui déclenche le Customer Journey côté Mailchimp.
+     ----------------------------------------------------------------------------- */
+  BTDSimulator.prototype._mailchimp = function (a, tag, journey, merge, qualif) {
+    var mc = CONFIG.mailchimp, self = this;
+    var tags = [tag];
+    if (mc.tagsQualification && qualif && qualif.length) tags = tags.concat(qualif);
+
+    // La personne a-t-elle déjà complété l'autre parcours dans cette session ?
+    var dejaFait = this.state.completed.filter(function (t) { return t !== self.state.track; });
+    if (dejaFait.length && mc.tagMixte) tags.push(mc.tagMixte);
+
+    var fields = { FNAME: a.firstname, LNAME: a.lastname, PHONE: a.phone };
+    for (var k in merge) { if (Object.prototype.hasOwnProperty.call(merge, k)) fields[k] = merge[k]; }
+
+    return {
+      email: a.email,
+      status: 'subscribed',
+      tags: tags,
+      tag_principal: tag,
+      journey_id: (journey && journey.id) || '',
+      journey_step_id: (journey && journey.stepId) || '',
+      parcours_deja_faits: dejaFait,          // ['public'] si double parcours
+      double_parcours: dejaFait.length > 0,
+      merge_fields: fields
+    };
+  };
+
   /* ----- Payload PUBLIC (champs d'origine conservés) ----- */
   BTDSimulator.prototype._payloadPublic = function (a, aids) {
     var u = this.state.utm;
+    var Q = QUESTIONS_PUBLIC;
     var innovTypes = arr(a['innovation-type']);
     var usages = arr(a[9]);
 
@@ -1492,6 +1633,17 @@
       parcours: 'public',
       firstname: a.firstname, lastname: a.lastname, email: a.email, phone: a.phone,
       eligible_aids: aids, aids_count: aids.length,
+      mailchimp: this._mailchimp(a, CONFIG.mailchimp.tagPublic, CONFIG.mailchimp.journeyPublic, {
+        PARCOURS:  'Financement public',
+        NBAIDES:   aids.length,
+        AIDES:     aids.slice(0, 5).join(', '),
+        STADE:     labelOf(Q, 2, a[2]),
+        BESOIN:    labelOf(Q, 8, a[8]),
+        EQUIPE:    labelOf(Q, 4, a[4]),
+        INNOV:     labelOf(Q, 5, a[5]),
+        USAGE:     labelOf(Q, 9, a[9]),
+        FDSPROPRE: labelOf(Q, 10, a[10])
+      }),
       utm_source: u.source, utm_medium: u.medium, utm_campaign: u.campaign,
       session_id: this.state.sessionId,
       reponses: {
@@ -1511,10 +1663,38 @@
   /* ----- Payload PRIVÉ ----- */
   BTDSimulator.prototype._payloadPrive = function (a, matches, rd) {
     var u = this.state.utm;
+    var Q = QUESTIONS_PRIVE;
+
+    // Tags de qualification : priorisation commerciale + branches du parcours Dataroom
+    var qualif = [];
+    qualif.push({ now:'Levee - Urgent (moins de 3 mois)', '3-6':'Levee - 3 a 6 mois',
+                  '6-12':'Levee - 6 a 12 mois', explo:'Levee - Exploration' }[a[11]] || 'Levee - Horizon non precise');
+    qualif.push(rd.score >= 60 ? 'Levee - Dossier pret' : 'Levee - Dossier a structurer');
+
     return {
       parcours: 'levee-de-fonds',
       firstname: a.firstname, lastname: a.lastname, email: a.email, phone: a.phone,
       entreprise: a.company || '',
+      mailchimp: this._mailchimp(a, CONFIG.mailchimp.tagPrive, CONFIG.mailchimp.journeyPrive, {
+        PARCOURS:  'Levee de fonds',
+        COMPANY:   a.company || '',
+        MONTANT:   labelOf(Q, 2, a[2]),
+        STADE:     labelOf(Q, 1, a[1]),
+        SECTEUR:   labelOf(Q, 3, a[3]),
+        TRACTION:  labelOf(Q, 4, a[4]),
+        HORIZON:   labelOf(Q, 11, a[11]),
+        SCORE:     rd.score,
+        NIVEAU:    rd.label,
+        NBINVEST:  matches.length,
+        TOPINVEST: matches.slice(0, 5).map(function (m) { return m.name; }).join(', '),
+        SECTEURDB: (SECTEUR_NOTION[a[3]] || []).join(', '),   // secteur(s) dans la base Notion
+        NOTIONURL: CONFIG.notionDb.url || '',
+        TYPEINV:   labelOf(Q, 8, a[8]),
+        THESE:     labelOf(Q, 9, a[9]),
+        PREPA:     labelOf(Q, 10, a[10])
+      }, qualif),
+      notion_url: CONFIG.notionDb.url || '',
+      secteur_notion: SECTEUR_NOTION[a[3]] || [],
       investisseurs: matches.map(function (m) { return { nom:m.name, type:m.type, affinite:m.affinite }; }),
       investisseurs_count: matches.length,
       investisseurs_top_str: matches.slice(0, 5).map(function (m) { return m.name; }).join(', '),
@@ -1561,12 +1741,43 @@
 
     this.$('pill').textContent = aids.length + ' dispositif' + (aids.length > 1 ? 's' : '') + ' identifié' + (aids.length > 1 ? 's' : '');
 
+    if (CONFIG.notionDb && CONFIG.notionDb.surPublic) this._showGift(this.root.querySelector('#results .post'));
+    else { var g = this.$('gift'); if (g) g.style.display = 'none'; }
+
     setTimeout(function () {
       self.$('loading').style.display = 'none';
       self.$('results').style.display = 'block';
       self._say('Analyse terminée : ' + aids.length + ' dispositifs');
       self._scrollTop();
     }, 1300);
+  };
+
+  /* ----- Carte "base Notion offerte" : positionnée juste avant le bloc email ----- */
+  BTDSimulator.prototype._showGift = function (before) {
+    var cfg = CONFIG.notionDb, gift = this.$('gift');
+    if (!gift) return;
+    if (!cfg || !cfg.url || !before) { gift.style.display = 'none'; return; }
+
+    // Le noeud est unique : on le déplace dans la section de résultats courante
+    if (gift.parentNode !== before.parentNode || gift.nextSibling !== before) {
+      before.parentNode.insertBefore(gift, before);
+    }
+
+    var link = this.$('gift-link');
+    link.href = cfg.url;
+    if (!link._btdBound) {
+      link._btdBound = true;
+      var self = this;
+      link.addEventListener('click', function () {
+        track('notion_db_click', { parcours: self.state.track });
+      });
+    }
+
+    var sect = SECTEUR_NOTION[this.state.answers[3]];
+    this.$('gift-secteur').textContent = sect && sect.length
+      ? 'Ton secteur dans la base : ' + sect.join(' · ')
+      : '';
+    gift.style.display = 'block';
   };
 
   BTDSimulator.prototype._aidEl = function (name) {
@@ -1606,6 +1817,8 @@
       this.root.querySelector('#results-prive .r-sub').textContent =
         "Aucun investisseur de notre base ne correspond exactement à ces critères. Un échange avec un expert permettra d'élargir le ciblage ou de préparer ta levée en amont.";
     }
+
+    this._showGift(this.root.querySelector('#results-prive .post'));
 
     this.$('gauge-lbl').textContent = 'Préparation à la levée : ' + rd.label;
     this.$('gauge-val').textContent = rd.score + '/100';
@@ -1673,7 +1886,15 @@
       }));
     } catch (e) {}
   };
+  // Parcours déjà complétés : conservé hors de "btd_state", qui est effacé après envoi
+  BTDSimulator.prototype._saveDone = function () {
+    try { sessionStorage.setItem('btd_done', JSON.stringify(this.state.completed)); } catch (e) {}
+  };
   BTDSimulator.prototype._load = function () {
+    try {
+      var done = JSON.parse(sessionStorage.getItem('btd_done'));
+      if (Array.isArray(done)) this.state.completed = done;
+    } catch (e) {}
     try {
       var d = JSON.parse(sessionStorage.getItem('btd_state'));
       if (!d) return;
