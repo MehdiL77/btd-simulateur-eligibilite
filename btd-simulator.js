@@ -825,13 +825,13 @@
   .start{ background:#FFD700; color:#003366; font-family:inherit; font-weight:800; font-size:1rem; padding:.95rem 2rem; border:none; border-radius:50px; cursor:pointer; transition:.25s; box-shadow:0 6px 20px rgba(255,215,0,.4); position:relative; display:inline-flex; align-items:center; gap:.55rem; }\
   .start:hover{ background:#e6c200; transform:translateY(-2px); box-shadow:0 8px 26px rgba(255,215,0,.5); }\
   .choices{ display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; text-align:left; position:relative; margin-top:1.7rem; }\
-  .choice{ background:rgba(255,255,255,.08); border:2px solid rgba(255,255,255,.3); border-radius:14px; padding:1.5rem 1.35rem 1.35rem; display:flex; flex-direction:column; gap:.42rem; font-family:inherit; color:#fff; text-align:left; cursor:pointer; transition:.25s; }\
-  .choice:hover{ background:rgba(255,255,255,.16); border-color:#FFD700; transform:translateY(-3px); box-shadow:0 12px 28px rgba(0,0,0,.2); }\
+  .choice{ background:#fff; border:2px solid #fff; border-radius:14px; padding:1.5rem 1.35rem 1.35rem; display:flex; flex-direction:column; gap:.42rem; font-family:inherit; color:#2a3340; text-align:left; cursor:pointer; transition:.25s; box-shadow:0 6px 18px rgba(0,0,0,.14); }\
+  .choice:hover{ border-color:#FFD700; transform:translateY(-3px); box-shadow:0 14px 30px rgba(0,0,0,.22); }\
   .choice:focus-visible{ outline:3px solid #FFD700; outline-offset:3px; }\
-  .choice-t{ font-size:1.1rem; font-weight:800; line-height:1.25; }\
-  .choice-s{ font-size:.85rem; font-weight:500; opacity:.86; line-height:1.5; }\
-  .choice-go{ margin-top:auto; padding-top:.85rem; display:inline-flex; align-items:center; gap:.4rem; font-size:.85rem; font-weight:800; color:#FFD700; transition:.25s; }\
-  .choice:hover .choice-go{ gap:.7rem; }\
+  .choice-t{ font-size:1.1rem; font-weight:800; line-height:1.25; color:#003366; }\
+  .choice-s{ font-size:.85rem; font-weight:500; line-height:1.5; color:#5a6472; }\
+  .choice-go{ margin-top:auto; padding-top:.9rem; display:inline-flex; align-items:center; gap:.4rem; font-size:.87rem; font-weight:800; color:#003366; transition:.25s; }\
+  .choice:hover .choice-go{ gap:.7rem; color:#8a6d00; }\
   .intro p.reassure{ margin:1.7rem auto 0; font-size:.8rem; font-weight:600; opacity:.8; position:relative; }\
   .step{ padding:2.2rem 2rem 2.4rem; display:none; }\
   .step.active{ display:block; animation:fade .35s ease; }\
