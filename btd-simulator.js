@@ -798,20 +798,15 @@
   .badge svg{ width:15px; height:15px; flex-shrink:0; }\
   .start{ background:#FFD700; color:#003366; font-family:inherit; font-weight:800; font-size:1rem; padding:.95rem 2rem; border:none; border-radius:50px; cursor:pointer; transition:.25s; box-shadow:0 6px 20px rgba(255,215,0,.4); position:relative; display:inline-flex; align-items:center; gap:.55rem; }\
   .start:hover{ background:#e6c200; transform:translateY(-2px); box-shadow:0 8px 26px rgba(255,215,0,.5); }\
-  .choices{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; text-align:left; position:relative; margin-top:.4rem; }\
-  .choice{ background:rgba(255,255,255,.07); border:1.5px solid rgba(255,255,255,.24); border-radius:14px; padding:1.35rem 1.25rem 1.25rem; display:flex; flex-direction:column; transition:.25s; }\
-  .choice:hover{ background:rgba(255,255,255,.13); border-color:#FFD700; transform:translateY(-3px); }\
-  .choice-ico{ width:38px; height:38px; border-radius:10px; background:rgba(255,215,0,.16); display:flex; align-items:center; justify-content:center; margin-bottom:.85rem; }\
-  .choice-ico svg{ width:20px; height:20px; color:#FFD700; }\
-  .choice h2{ font-size:1.02rem; font-weight:800; line-height:1.3; margin-bottom:.45rem; }\
-  .choice p{ font-size:.83rem; font-weight:500; opacity:.85; line-height:1.5; margin:0 0 1.1rem; max-width:none; }\
-  .choice ul{ list-style:none; margin:0 0 1.15rem; }\
-  .choice li{ font-size:.79rem; font-weight:600; opacity:.9; display:flex; align-items:flex-start; gap:.45rem; margin-bottom:.35rem; }\
-  .choice li::before{ content:''; width:6px; height:6px; border-radius:50%; background:#FFD700; flex-shrink:0; margin-top:.42rem; }\
-  .choice-btn{ margin-top:auto; background:#FFD700; color:#003366; font-family:inherit; font-weight:800; font-size:.9rem; padding:.8rem 1.1rem; border:none; border-radius:50px; cursor:pointer; transition:.25s; display:inline-flex; align-items:center; justify-content:center; gap:.45rem; width:100%; }\
-  .choice-btn:hover{ background:#e6c200; }\
-  .choice.alt .choice-btn{ background:#fff; }\
-  .choice.alt .choice-btn:hover{ background:#e7ebf1; }\
+  .choices{ display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; text-align:left; position:relative; margin-top:1.7rem; }\
+  .choice{ background:rgba(255,255,255,.08); border:2px solid rgba(255,255,255,.3); border-radius:14px; padding:1.5rem 1.35rem 1.35rem; display:flex; flex-direction:column; gap:.42rem; font-family:inherit; color:#fff; text-align:left; cursor:pointer; transition:.25s; }\
+  .choice:hover{ background:rgba(255,255,255,.16); border-color:#FFD700; transform:translateY(-3px); box-shadow:0 12px 28px rgba(0,0,0,.2); }\
+  .choice:focus-visible{ outline:3px solid #FFD700; outline-offset:3px; }\
+  .choice-t{ font-size:1.1rem; font-weight:800; line-height:1.25; }\
+  .choice-s{ font-size:.85rem; font-weight:500; opacity:.86; line-height:1.5; }\
+  .choice-go{ margin-top:auto; padding-top:.85rem; display:inline-flex; align-items:center; gap:.4rem; font-size:.85rem; font-weight:800; color:#FFD700; transition:.25s; }\
+  .choice:hover .choice-go{ gap:.7rem; }\
+  .intro p.reassure{ margin:1.7rem auto 0; font-size:.8rem; font-weight:600; opacity:.8; position:relative; }\
   .step{ padding:2.2rem 2rem 2.4rem; display:none; }\
   .step.active{ display:block; animation:fade .35s ease; }\
   .prog{ height:6px; background:#e7ebf1; border-radius:4px; overflow:hidden; margin-bottom:.6rem; }\
@@ -1088,25 +1083,22 @@
   BTDSimulator.prototype._introHtml = function () {
     if (this.mode === 'both') {
       return '' +
-        '<h1>Quel financement cherches-tu&nbsp;?</h1>' +
+        '<h1>Découvre les aides et les financeurs privés adaptés à ton projet</h1>' +
         '<div class="line"></div>' +
-        '<p>Deux parcours, deux réponses concrètes en quelques minutes. Choisis celui qui correspond à ton besoin.</p>' +
+        '<p>Choisis ton parcours, réponds à quelques questions&nbsp;: tu reçois ton résultat par email.</p>' +
         '<div class="choices">' +
-          '<div class="choice">' +
-            '<div class="choice-ico">' + ICONS.gov + '</div>' +
-            '<h2>Financement public</h2>' +
-            '<p>Sans diluer ton capital&nbsp;: subventions, concours, prêts à taux zéro et crédits d\'impôt.</p>' +
-            '<ul><li>20 dispositifs analysés</li><li>10 questions, 2 minutes</li></ul>' +
-            '<button class="choice-btn" type="button" data-track="public">Voir mon éligibilité ' + ARROW + '</button>' +
-          '</div>' +
-          '<div class="choice alt">' +
-            '<div class="choice-ico">' + ICONS.rocket + '</div>' +
-            '<h2>Levée de fonds</h2>' +
-            '<p>Identifie les fonds, business angels et plateformes dont la thèse correspond à ton projet.</p>' +
-            '<ul><li>Short-list d\'investisseurs ciblés</li><li>Score de préparation à la levée</li></ul>' +
-            '<button class="choice-btn" type="button" data-track="prive">Trouver mes investisseurs ' + ARROW + '</button>' +
-          '</div>' +
-        '</div>';
+          '<button class="choice" type="button" data-track="public">' +
+            '<span class="choice-t">Financement public</span>' +
+            '<span class="choice-s">Subventions, aides, concours, prêts à taux zéro et crédits d\'impôt.</span>' +
+            '<span class="choice-go">Commencer ' + ARROW + '</span>' +
+          '</button>' +
+          '<button class="choice" type="button" data-track="prive">' +
+            '<span class="choice-t">Financement privé</span>' +
+            '<span class="choice-s">Levée de fonds&nbsp;: fonds d\'investissement, business angels, plateformes.</span>' +
+            '<span class="choice-go">Commencer ' + ARROW + '</span>' +
+          '</button>' +
+        '</div>' +
+        '<p class="reassure">2 minutes&nbsp;· Gratuit&nbsp;· Résultat envoyé par email</p>';
     }
     var t = TRACKS[this.mode];
     return '' +
