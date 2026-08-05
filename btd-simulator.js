@@ -963,8 +963,7 @@
   /* ============================================================
      CUSTOM ELEMENT
      ============================================================ */
-  var BTDSimulator = function () {
-    var self = Reflect.construct(HTMLElement, [], BTDSimulator);
+  function initState(self) {
     self.state = {
       track: null, current: 1, answers: {}, contact: {}, completed: [],
       submitted: false, lastSubmit: 0,
@@ -972,6 +971,11 @@
       utm: { source:'direct', medium:'none', campaign:'none', referrer:'' }
     };
     self.investors = INVESTORS_DEMO;
+  }
+
+  var BTDSimulator = function () {
+    var self = Reflect.construct(HTMLElement, [], BTDSimulator);
+    initState(self);
     return self;
   };
   BTDSimulator.prototype = Object.create(HTMLElement.prototype);
@@ -997,6 +1001,7 @@
 
   /* ----- Mode : attribut > paramètre d'URL > défaut ----- */
   BTDSimulator.prototype._getMode = function () {
+    if (this._forcedMode) return this._forcedMode;   // balise dédiée (voir plus bas)
     var m = (this.getAttribute('mode') || '').toLowerCase();
     if (m !== 'public' && m !== 'prive') {
       try {
@@ -1928,4 +1933,32 @@
   BTDSimulator.prototype._clearSave = function () { try { sessionStorage.removeItem('btd_state'); } catch (e) {} };
 
   customElements.define(TAG, BTDSimulator);
+
+  /* -----------------------------------------------------------------------------
+     BALISES DÉDIÉES À UN SEUL PARCOURS
+     -----------------------------------------------------------------------------
+     Certaines intégrations ne permettent pas de poser d'attribut sur la balise.
+     C'est le cas de l'élément personnalisé de Wix, où l'on ne renseigne qu'une
+     URL de script et un nom de balise (passer mode="prive" y imposerait du code
+     Velo). Ces deux balises supplémentaires évitent ce détour : même fichier,
+     même URL, il suffit de changer le nom de la balise dans Wix.
+
+       <btd-simulator>          -> écran de choix des deux parcours
+       <btd-simulator-public>   -> directement le parcours aides publiques
+       <btd-simulator-prive>    -> directement le parcours levée de fonds
+     ----------------------------------------------------------------------------- */
+  function defineVariant(tag, mode) {
+    if (customElements.get(tag)) return;
+    var Variant = function () {
+      var self = Reflect.construct(HTMLElement, [], Variant);
+      initState(self);
+      self._forcedMode = mode;
+      return self;
+    };
+    Variant.prototype = Object.create(BTDSimulator.prototype);
+    Variant.prototype.constructor = Variant;
+    customElements.define(tag, Variant);
+  }
+  defineVariant(TAG + '-public', 'public');
+  defineVariant(TAG + '-prive',  'prive');
 })();
