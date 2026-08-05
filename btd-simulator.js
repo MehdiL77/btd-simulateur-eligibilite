@@ -78,13 +78,20 @@
        orthographié ne déclenchera aucun parcours).
        ------------------------------------------------------------------------- */
     mailchimp: {
-      // Tag principal de chaque parcours (celui qui déclenche la série de NL)
-      tagPublic: 'Simulateur - Financement public',
-      tagPrive:  'Simulateur - Levee de fonds',
+      // Tag principal de chaque parcours — c'est lui qui déclenche la série de NL.
+      // ⚠️ tagPublic : renseigne ici le tag que ton scénario Make pose déjà pour le
+      //    parcours aides publiques. Laissé vide, aucun tag public n'est envoyé
+      //    (ton montage actuel continue de fonctionner, il n'est pas touché).
+      tagPublic: '',
+      tagPrive:  'FinPriv LF dataroom',
+
+      // Préfixe des tags de qualification du parcours privé, aligné sur tagPrive
+      // pour qu'ils se regroupent dans la liste Mailchimp.
+      prefixePrive: 'FinPriv LF',
 
       // Tag posé quand la même personne fait AUSSI l'autre parcours dans la session.
       // Sert à éviter qu'elle reçoive deux séries de newsletters en parallèle.
-      tagMixte:  'Simulateur - Double parcours',
+      tagMixte:  'Simulateur double parcours',
 
       // Tags secondaires de qualification (mets false pour n'envoyer que le tag principal)
       tagsQualification: true,
@@ -1640,7 +1647,9 @@
      ----------------------------------------------------------------------------- */
   BTDSimulator.prototype._mailchimp = function (a, tag, journey, merge, qualif) {
     var mc = CONFIG.mailchimp, self = this;
-    var tags = [tag];
+    // Un tag non renseigné n'est pas envoyé : Mailchimp crée à la volée tout tag
+    // reçu, un libellé vide ou provisoire polluerait l'audience.
+    var tags = tag ? [tag] : [];
     if (mc.tagsQualification && qualif && qualif.length) tags = tags.concat(qualif);
 
     // La personne a-t-elle déjà complété l'autre parcours dans cette session ?
@@ -1707,10 +1716,11 @@
     var Q = QUESTIONS_PRIVE;
 
     // Tags de qualification : priorisation commerciale + branches du parcours Dataroom
+    var pfx = (CONFIG.mailchimp.prefixePrive || 'FinPriv LF') + ' ';
     var qualif = [];
-    qualif.push({ now:'Levee - Urgent (moins de 3 mois)', '3-6':'Levee - 3 a 6 mois',
-                  '6-12':'Levee - 6 a 12 mois', explo:'Levee - Exploration' }[a[11]] || 'Levee - Horizon non precise');
-    qualif.push(rd.score >= 60 ? 'Levee - Dossier pret' : 'Levee - Dossier a structurer');
+    qualif.push(pfx + ({ now:'urgent (moins de 3 mois)', '3-6':'3 a 6 mois',
+                         '6-12':'6 a 12 mois', explo:'exploration' }[a[11]] || 'horizon non precise'));
+    qualif.push(pfx + (rd.score >= 60 ? 'dossier pret' : 'dossier a structurer'));
 
     return {
       parcours: 'levee-de-fonds',
