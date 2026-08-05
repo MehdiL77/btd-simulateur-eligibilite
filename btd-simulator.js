@@ -363,153 +363,171 @@
   };
 
   /* -----------------------------------------------------------------------------
-     BASE INVESTISSEURS — ⚠️ JEU DE DÉMONSTRATION
+     BASE INVESTISSEURS — extraite de la base Notion BTD Consulting
      -----------------------------------------------------------------------------
-     Les noms ci-dessous sont réels, mais les critères (tickets, stades, secteurs)
-     sont des ORDRES DE GRANDEUR issus de communications publiques. Ils servent à
-     faire tourner l'outil et à documenter le format attendu.
+     Source : espace « Du public au privé : toutes les options de financement »
+       • base VCs                 -> 23 fonds
+       • base Groupement de BA    -> 14 réseaux
+       • base BA                  -> 7 business angels renseignés
+     44 entrées exploitables. 7 business angels sont écartés faute de stade,
+     de région ou de secteur renseignés dans Notion (Morgane Rollando,
+     Elisabeth Lecuyer, Gilles Demigneux, Jean-Maurice Crozet,
+     Marie-Christine Levet, Marie-France Pedroni, Pierre Jaffary, Roland Walter) :
+     complète leurs fiches et ils entreront automatiquement au prochain export.
 
-     >>> À REMPLACER PAR TA BASE avant mise en production, de 3 façons :
-       1. Remplacer le contenu de INVESTORS_DEMO ci-dessous.
-       2. Attribut data-investors="https://.../investisseurs.json" (même format).
-       3. Attribut data-match-endpoint="https://..." → le matching est fait côté
-          serveur, ta base ne descend jamais dans le navigateur (recommandé).
+     TRANSPOSITIONS APPLIQUÉES (à connaître avant de modifier la base)
+     1. Montants — absents de Notion. Le champ « Tickets d'investissement »
+        contient des stades, pas des euros. Les fourchettes ci-dessous sont
+        déduites du stade selon les usages de marché :
+          pre-seed 50 k–500 k · seed 300 k–3 M · série A 1–15 M · série B+ 5–50 M
+        Si tu ajoutes un champ de montant dans Notion, il prendra le pas.
+     2. Régions — « Europe » est traité comme incluant la France : plusieurs
+        fonds français (Alven, ELAIA, Alter Equity…) n'y sont taggés qu'« Europe »,
+        les exclure d'une recherche française n'aurait pas de sens.
+     3. Types — Notion ne distingue pas le corporate venture ni le family office.
+        Reclassés à la main : Open CNP, Société Générale Ventures, Crédit Mutuel
+        et Cathay en corporate venture, CreaDev en family office.
+     4. Thèses — champ inexistant, déduites du texte de présentation.
+        C'est la donnée la moins fiable de la base : à revoir en priorité.
 
-     FORMAT D'UNE ENTRÉE
-       name        : string  — nom affiché
-       type        : 'vc' | 'ba' | 'cvc' | 'fo' | 'crowd' | 'debt' | 'accelerateur'
-       stages      : ['love-money','pre-seed','seed','serie-a','serie-b']
-       ticketMin   : nombre  — ticket minimum en €
-       ticketMax   : nombre  — ticket maximum en €
-       sectors     : ['saas','fintech'...] ou ['all'] pour un généraliste
-       geos        : ['idf','region','dom','europe','hors-europe'] ou ['all']
-       theses      : ['impact','deeptech','diversite','regional','industriel','international']
-       minTraction : (optionnel) 'pre-revenu'|'<10k'|'10-100k'|'100-500k'|'500k+'
-       desc        : string  — 1 phrase de positionnement
-       url         : (optionnel) site web
+     MANQUES À COMBLER DANS NOTION
+       • Aucune plateforme de crowdequity ni de venture debt : les personnes qui
+         cochent ces types au questionnaire ne trouveront rien de ce côté.
+       • Secteurs Cinéma, Culture et Sport encore vides.
      ----------------------------------------------------------------------------- */
-  var INVESTORS_DEMO = [
-    { name:"Kima Ventures", type:'vc', stages:['pre-seed','seed'], ticketMin:100000, ticketMax:300000,
-      sectors:['all'], geos:['all'], theses:['international'],
-      desc:"Fonds très actif en pre-seed, tickets standardisés et décision rapide, tous secteurs tech." },
-    { name:"Frst", type:'vc', stages:['pre-seed','seed'], ticketMin:300000, ticketMax:1500000,
-      sectors:['saas','marketplace','fintech','deeptech','ia','industrie','service'], geos:['idf','region','europe'], theses:[],
-      desc:"Fonds pre-seed français, premier chèque institutionnel sur des projets tech ambitieux." },
-    { name:"Founders Future", type:'vc', stages:['pre-seed','seed'], ticketMin:200000, ticketMax:1500000,
-      sectors:['saas','marketplace','ecommerce','fintech','edtech','ia','service'], geos:['idf','region'], theses:[],
-      desc:"Startup studio et fonds d'amorçage, accompagnement opérationnel des fondateurs." },
-    { name:"Breega", type:'vc', stages:['pre-seed','seed','serie-a'], ticketMin:500000, ticketMax:5000000,
-      sectors:['saas','fintech','deeptech','ia','marketplace','greentech'], geos:['idf','region','europe'], theses:['international'],
-      desc:"Fonds européen early-stage avec une équipe support (RH, marketing, finance) pour les participations." },
-    { name:"Alven", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:10000000,
-      sectors:['saas','marketplace','fintech','ia','creative'], geos:['idf','region','europe'], theses:['international'],
-      desc:"Fonds de référence sur le logiciel et les plateformes, du seed à la série A.", minTraction:'10-100k' },
-    { name:"Partech", type:'vc', stages:['seed','serie-a','serie-b'], ticketMin:500000, ticketMax:15000000,
-      sectors:['all'], geos:['idf','region','europe','hors-europe'], theses:['international'],
-      desc:"Fonds international, du seed au growth, forte capacité de réinvestissement.", minTraction:'10-100k' },
-    { name:"Serena", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:8000000,
-      sectors:['saas','deeptech','ia','industrie','greentech','service'], geos:['idf','region','europe'], theses:['deeptech'],
-      desc:"Fonds tech B2B et data, accompagnement structuré des équipes.", minTraction:'100-500k' },
-    { name:"Daphni", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:8000000,
-      sectors:['saas','marketplace','ecommerce','greentech','medtech','ia'], geos:['idf','region','europe'], theses:['impact','international'],
-      desc:"Fonds européen orienté usages et transitions, communauté d'experts très active.", minTraction:'10-100k' },
-    { name:"Elaia Partners", type:'vc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:10000000,
-      sectors:['saas','deeptech','ia','medtech','biotech','industrie'], geos:['idf','region','europe'], theses:['deeptech'],
-      desc:"Fonds deeptech et B2B, forte proximité avec les laboratoires de recherche." },
-    { name:"Newfund", type:'vc', stages:['pre-seed','seed'], ticketMin:300000, ticketMax:2000000,
-      sectors:['all'], geos:['idf','region','hors-europe'], theses:['regional'],
-      desc:"Fonds d'amorçage présent en régions et aux États-Unis, tous secteurs." },
-    { name:"Ovni Capital", type:'vc', stages:['pre-seed','seed'], ticketMin:200000, ticketMax:1000000,
-      sectors:['saas','marketplace','fintech','edtech','ia'], geos:['idf','region'], theses:['international'],
-      desc:"Fonds pre-seed dédié aux startups françaises à vocation internationale dès le départ." },
-    { name:"Otium Capital", type:'fo', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:10000000,
-      sectors:['ecommerce','foodtech','medtech','creative','marketplace','service'], geos:['idf','region'], theses:[],
-      desc:"Family office entrepreneurial, investissement long terme sans contrainte de cycle de fonds.", minTraction:'100-500k' },
-    { name:"Ring Capital", type:'vc', stages:['serie-a','serie-b'], ticketMin:2000000, ticketMax:15000000,
-      sectors:['saas','greentech','medtech','edtech','industrie','ess'], geos:['idf','region'], theses:['impact'],
-      desc:"Fonds impact growth, accompagne les scale-ups à mission après leur seed.", minTraction:'500k+' },
-    { name:"Citizen Capital", type:'vc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:5000000,
-      sectors:['medtech','edtech','greentech','industrie','saas','ess'], geos:['idf','region'], theses:['impact','diversite'],
-      desc:"Fonds à impact, thèse sociale et environnementale avec mesure d'impact formalisée." },
-    { name:"INCO Ventures", type:'vc', stages:['pre-seed','seed'], ticketMin:100000, ticketMax:1500000,
-      sectors:['greentech','foodtech','agritech','edtech','medtech','industrie','ess'], geos:['idf','region','dom'], theses:['impact','regional'],
-      desc:"Investisseur à impact, transition écologique et inclusion, présent en régions et outre-mer." },
-    { name:"Demeter", type:'vc', stages:['serie-a','serie-b'], ticketMin:1000000, ticketMax:15000000,
-      sectors:['greentech','mobilite','industrie','deeptech','btp'], geos:['idf','region','europe'], theses:['impact','industriel'],
-      desc:"Fonds spécialisé transition écologique, énergie et mobilité durable.", minTraction:'100-500k' },
-    { name:"Supernova Invest", type:'vc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:8000000,
-      sectors:['deeptech','ia','medtech','biotech','greentech','industrie'], geos:['idf','region'], theses:['deeptech'],
-      desc:"Fonds deeptech adossé au CEA, projets à forte intensité technologique et scientifique." },
-    { name:"Karista", type:'vc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:5000000,
-      sectors:['medtech','biotech','deeptech','ia','saas'], geos:['idf','region','europe'], theses:['deeptech'],
-      desc:"Fonds early-stage santé numérique, medtech et technologies de rupture." },
-    { name:"Kurma Partners", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:15000000,
-      sectors:['medtech','biotech'], geos:['idf','region','europe'], theses:['deeptech'],
-      desc:"Fonds spécialisé biotech, medtech et santé numérique, du prégermination à la série A." },
-    { name:"Sofinnova Partners", type:'vc', stages:['serie-a','serie-b'], ticketMin:3000000, ticketMax:30000000,
-      sectors:['biotech','medtech','greentech','deeptech'], geos:['idf','region','europe'], theses:['deeptech'],
-      desc:"Fonds life sciences de référence en Europe, tickets importants sur des projets scientifiques." },
-    { name:"Five Seasons Ventures", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:10000000,
-      sectors:['foodtech','agritech','ecommerce'], geos:['idf','region','europe'], theses:['impact'],
-      desc:"Fonds européen dédié à l'alimentation et aux marques food innovantes.", minTraction:'100-500k' },
-    { name:"Astanor Ventures", type:'vc', stages:['seed','serie-a'], ticketMin:1000000, ticketMax:15000000,
-      sectors:['foodtech','agritech','greentech'], geos:['idf','region','europe','hors-europe'], theses:['impact','international'],
-      desc:"Fonds agritech et foodtech à impact, thèse systèmes alimentaires durables." },
-    { name:"Eutopia", type:'vc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:5000000,
-      sectors:['ecommerce','foodtech','creative'], geos:['idf','region','europe'], theses:[],
-      desc:"Fonds dédié aux marques et au consumer, expertise retail et distribution.", minTraction:'100-500k' },
-    { name:"Aster Capital", type:'cvc', stages:['serie-a','serie-b'], ticketMin:2000000, ticketMax:15000000,
-      sectors:['greentech','industrie','mobilite','deeptech','btp'], geos:['idf','region','europe'], theses:['industriel','impact'],
-      desc:"Fonds corporate adossé à des industriels de l'énergie et de l'industrie.", minTraction:'100-500k' },
-    { name:"Orange Ventures", type:'cvc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:10000000,
-      sectors:['saas','fintech','deeptech','ia','creative','medtech'], geos:['idf','region','europe'], theses:['industriel'],
-      desc:"Corporate venture d'un opérateur télécom, accès à un réseau de distribution grand compte." },
-    { name:"MAIF Impact", type:'cvc', stages:['seed','serie-a'], ticketMin:500000, ticketMax:5000000,
-      sectors:['medtech','greentech','edtech','mobilite','ess'], geos:['idf','region'], theses:['impact','industriel'],
-      desc:"Fonds corporate à impact d'un assureur mutualiste, projets d'utilité sociale." },
-    { name:"Go Capital", type:'vc', stages:['pre-seed','seed','serie-a'], ticketMin:300000, ticketMax:5000000,
-      sectors:['deeptech','ia','medtech','biotech','saas','industrie','greentech'], geos:['region'], theses:['regional','deeptech'],
-      desc:"Fonds régional du Grand Ouest, amorçage deeptech et innovation territoriale." },
-    { name:"IRDI Capital Investissement", type:'vc', stages:['seed','serie-a'], ticketMin:300000, ticketMax:5000000,
-      sectors:['all'], geos:['region'], theses:['regional'],
-      desc:"Fonds régional Occitanie et Nouvelle-Aquitaine, généraliste avec volet innovation." },
-    { name:"Kreaxi", type:'vc', stages:['pre-seed','seed'], ticketMin:200000, ticketMax:3000000,
-      sectors:['deeptech','ia','medtech','industrie','saas','btp'], geos:['region'], theses:['regional','deeptech'],
-      desc:"Fonds d'amorçage Auvergne-Rhône-Alpes, technologies et industrie." },
-    { name:"Sofimac Innovation", type:'vc', stages:['pre-seed','seed'], ticketMin:200000, ticketMax:3000000,
-      sectors:['all'], geos:['region'], theses:['regional'],
-      desc:"Capital-innovation régional, amorçage sur plusieurs territoires français." },
-    { name:"Paris Business Angels", type:'ba', stages:['love-money','pre-seed','seed'], ticketMin:50000, ticketMax:500000,
-      sectors:['all'], geos:['idf'], theses:[],
-      desc:"Réseau de business angels francilien, tours d'amorçage syndiqués entre membres." },
-    { name:"Femmes Business Angels", type:'ba', stages:['love-money','pre-seed','seed'], ticketMin:30000, ticketMax:300000,
-      sectors:['all'], geos:['idf','region'], theses:['diversite'],
-      desc:"Réseau de business angels investissant en priorité dans des équipes fondées par des femmes." },
-    { name:"Angels Santé", type:'ba', stages:['pre-seed','seed'], ticketMin:50000, ticketMax:500000,
-      sectors:['medtech','biotech'], geos:['idf','region'], theses:['deeptech'],
-      desc:"Réseau de business angels spécialisé santé, medtech et biotech." },
-    { name:"Investir&+", type:'ba', stages:['pre-seed','seed','serie-a'], ticketMin:100000, ticketMax:1000000,
-      sectors:['greentech','medtech','edtech','foodtech','agritech','industrie','ess'], geos:['idf','region'], theses:['impact'],
-      desc:"Collectif d'investisseurs à impact, entrepreneuriat social et transition." },
-    { name:"WiSEED", type:'crowd', stages:['pre-seed','seed','serie-a'], ticketMin:100000, ticketMax:3000000,
-      sectors:['greentech','medtech','industrie','ecommerce','mobilite','btp','ess'], geos:['idf','region','dom'], theses:['impact','regional'],
-      desc:"Plateforme de financement participatif en capital et en obligations, forte communauté." },
-    { name:"Tudigo", type:'crowd', stages:['love-money','pre-seed','seed'], ticketMin:50000, ticketMax:1500000,
-      sectors:['ecommerce','foodtech','greentech','creative','industrie','service'], geos:['idf','region'], theses:['regional','impact'],
-      desc:"Crowdequity orienté marques et projets à ancrage local, campagne publique mobilisatrice." },
-    { name:"Sowefund", type:'crowd', stages:['pre-seed','seed'], ticketMin:100000, ticketMax:1500000,
-      sectors:['all'], geos:['idf','region'], theses:[],
-      desc:"Plateforme de crowdequity co-investissant aux côtés de business angels et de fonds." },
-    { name:"LITA.co", type:'crowd', stages:['pre-seed','seed','serie-a'], ticketMin:100000, ticketMax:2000000,
-      sectors:['greentech','foodtech','agritech','medtech','edtech','ess'], geos:['idf','region'], theses:['impact'],
-      desc:"Plateforme d'investissement à impact, sélection exigeante sur les critères ESG." },
-    { name:"Silvr", type:'debt', stages:['seed','serie-a','serie-b'], ticketMin:50000, ticketMax:5000000,
-      sectors:['saas','ecommerce','marketplace','creative'], geos:['idf','region','europe'], theses:[],
-      desc:"Financement non dilutif basé sur les revenus, adapté au SaaS et à l'e-commerce.", minTraction:'100-500k' },
-    { name:"Karmen", type:'debt', stages:['seed','serie-a'], ticketMin:50000, ticketMax:3000000,
-      sectors:['saas','marketplace','ecommerce'], geos:['idf','region'], theses:[],
-      desc:"Avance de trésorerie sur revenus récurrents, complément non dilutif d'une levée.", minTraction:'100-500k' }
-  ];
+  var INVESTORS = [
+    { name:"3A Venture", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["all"], geos:["idf","region"], theses:[],
+      desc:"3A Venture est une société d’investissement qui concourt au renforcement des fonds propres des jeunes sociétés innovantes", url:"https://www.linkedin.com/company/3aventure/" },
+    { name:"Abab Atlantique BA Booster", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["btp","saas","marketplace","industrie","agritech","edtech"], geos:["region"], theses:["regional"],
+      desc:"BusinessBooster recherche des projets innovants en Pays de la Loire, portés par des équipes solides, pour les accompagner et les financer via son réseau de Business Angels.", url:"https://www.businessbooster.fr/quest-ce-quun-business-angel/" },
+    { name:"Adour BA", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["industrie","btp","saas","marketplace","greentech"], geos:["region"], theses:["regional"],
+      desc:"Association de Business Angels du Sud-Ouest fondée en 2009, composée d’entrepreneurs et d’experts qui investissent et accompagnent les startups régionales.", url:"https://adourbusinessangels.com/" },
+    { name:"Alexandre Fretti", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["deeptech","ia","saas","marketplace"], geos:["idf","region"], theses:[],
+      desc:"Business angel. Participations : Storyzy, SmartApps, Softcorner, Eventmaker, Fitle, Calicea, Hemea, Gojob, Episto, Mayday, Mediflash", url:"https://www.linkedin.com/in/alexandre-fretti-1323281/" },
+    { name:"Alexandre Ichai", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["deeptech","ia","biotech","fintech","service"], geos:["idf","region"], theses:[],
+      desc:"Business angel.", url:"https://avacapital.org/" },
+    { name:"Angelor BA", type:"ba", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["industrie","saas","marketplace","medtech","btp","foodtech","greentech","deeptech","ia"], geos:["region"], theses:["regional","impact"],
+      desc:"Société de gestion lyonnaise agréée AMF qui investit entre 500 000 € et 2 M€ dans des startups innovantes, en santé et transition écologique.", url:"https://angelor.fr/" },
+    { name:"Arts & Métiers Alumni", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["greentech","saas","marketplace","service","biotech","industrie"], geos:["idf","region"], theses:["regional","impact"],
+      desc:"AMBA regroupe les Business Angels Ingénieurs Arts & Métiers, qui investissent dans les startups françaises à forte croissance et à impact sociétal et environnemental.", url:"https://www.am-businessangels.org/entrepreneurs" },
+    { name:"BA 35", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["all"], geos:["idf","region"], theses:[],
+      desc:"Business Angels 35 est un réseau d’investisseurs qui accompagne, finance et soutient des entreprises innovantes à fort potentiel", url:"https://business-angels-35.fr/entrepreneurs/" },
+    { name:"BFC Angels", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["all"], geos:["region"], theses:["regional"],
+      desc:"Réseau de Business Angels de Bourgogne–Franche-Comté", url:"https://www.bfcangels.com/selection-start-up/" },
+    { name:"Cenitz", type:"ba", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["medtech","ia"], geos:["idf","region"], theses:[],
+      desc:"Cenitz est un club-deal en private equity spécialisé dans la santé qui permet à des investisseurs qualifiés de financer des innovations dès les premiers stades.", url:"https://www.cenitz.fr/#howitworkss" },
+    { name:"ESSEC BA", type:"ba", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["all"], geos:["idf","region"], theses:["deeptech"],
+      desc:"Club d’Alumni ESSEC créé en 2011, qui investit dans des start-up à fort potentiel de tous secteurs, avec une prédilection pour l’économie numérique, la santé et les deeptech.", url:"https://www.essecalumni.com/fr/group/business-angels/49" },
+    { name:"European Super Angels Club", type:"ba", stages:["seed","serie-a","serie-b"], ticketMin:300000, ticketMax:50000000,
+      sectors:["ia","medtech","fintech","deeptech","service"], geos:["europe","idf","region"], theses:["regional"],
+      desc:"Club européen de business angels investissant en amorçage et en séries A et B.", url:"https://superangels.club/for-founders-general-submissions/" },
+    { name:"Femmes BA", type:"ba", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["all"], geos:["idf","region"], theses:["diversite"],
+      desc:"Le seul réseau français de business angels entièrement féminin, et le 1er en Europe, composé d’environ 160 femmes investisseuses qui financent des startups dès le stade early.", url:"https://www.femmesbusinessangels.org/" },
+    { name:"Frédéric Picq", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["medtech"], geos:["europe","idf","region"], theses:[],
+      desc:"Business angel. Participations : Oria Bioscience, InHeart, Primaa", url:"https://www.linkedin.com/in/fr%C3%A9d%C3%A9ric-picq/" },
+    { name:"Guillaume Lestrade", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["ia","fintech","saas","marketplace","service","agritech","foodtech"], geos:["idf","region"], theses:["impact"],
+      desc:"Business angel. Participations : Jump, Quiet, Climate Club, Job Protocol, NFT Factory, Trendex, Kosmik, Dark", url:"https://www.linkedin.com/in/guillaume-lestrade-1302551a/" },
+    { name:"Health Angels", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["service","biotech","medtech"], geos:["region"], theses:["regional","deeptech"],
+      desc:"Health Angels Rhône-Alpes est une association qui favorise le financement des jeunes entreprises innovantes dans tous les domaines de la Santé et des Sciences de la Vie.", url:"" },
+    { name:"Jean-Marc Bouhelier", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["fintech","medtech","foodtech","mobilite","saas","marketplace"], geos:["idf","region"], theses:[],
+      desc:"Business angel. Participations : Keyban.io, Youzd, mindDay, Back Market, Welfaire, Citygoo, Guest Suite, EEL Energy", url:"https://www.linkedin.com/in/jbouhelier/" },
+    { name:"Marc Menasé", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["saas","marketplace","ia","greentech","fintech","service"], geos:["europe","hors-europe","idf","region"], theses:["international"],
+      desc:"Business angel. Participations : Nextedia, Kelkoo, Menlook, Teads, Lendix, Molotov, Le Petit Ballon", url:"https://www.linkedin.com/in/marc-menase/" },
+    { name:"Marie-France Pedroni", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["all"], geos:["idf","region"], theses:[],
+      desc:"Business angel.", url:"https://www.linkedin.com/in/marie-france-p%C3%A9droni-87677823/" },
+    { name:"Occitanie Angels", type:"ba", stages:["seed"], ticketMin:300000, ticketMax:3000000,
+      sectors:["all"], geos:["region"], theses:["regional"],
+      desc:"Capitole Angels a fusionné avec MELIES Business Angels pour devenir Occitanie Angels.", url:"https://www.capitole-angels.com/levee-de-fonds/" },
+    { name:"UI Investissement", type:"ba", stages:["seed","serie-a","serie-b"], ticketMin:300000, ticketMax:50000000,
+      sectors:["ia","saas","marketplace","service","deeptech"], geos:["idf","region"], theses:[],
+      desc:"UI investit dans des start-up, PME et ETI françaises non cotées pour leur apporter un soutien financier et une expertise opérationnelle.", url:"https://www.ui-investissement.com/nos-metiers/" },
+    { name:"Cathay Innovation - Vertical A", type:"cvc", stages:["serie-a","serie-b"], ticketMin:1000000, ticketMax:50000000,
+      sectors:["ia","medtech"], geos:["europe","idf","region"], theses:["international"],
+      desc:"Cathay Capital est une société d’investissement internationale présente en Europe, Asie et Amériques.", url:"https://www.cathaycapital.com/private-equity/" },
+    { name:"Open CNP", type:"cvc", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["fintech","greentech","saas","marketplace"], geos:["idf","region"], theses:["industriel"],
+      desc:"Open CNP est le fonds de corporate venture capital de CNP Assurances. Il soutient des start-ups innovantes en finance, assurance et secteurs adjacents.", url:"https://open.cnp.fr/" },
+    { name:"Société général Ventures", type:"cvc", stages:["serie-a","serie-b"], ticketMin:1000000, ticketMax:50000000,
+      sectors:["fintech","greentech","deeptech","ia","saas","marketplace"], geos:["europe","idf","region"], theses:["industriel"],
+      desc:"Bras de capital-risque du groupe Société Générale. Investit dans des startups early stage ou en forte croissance avec des modèles disruptifs.", url:"https://www.ventures.societegenerale.com/en/" },
+    { name:"Venture de Crédit mutuel", type:"cvc", stages:["serie-a","serie-b"], ticketMin:1000000, ticketMax:50000000,
+      sectors:["saas","marketplace","deeptech","ia","medtech"], geos:["idf","region"], theses:["deeptech","industriel"],
+      desc:"Crédit Mutuel Innovation est une filiale de Crédit Mutuel Equity. Elle investit dans des startups à fort potentiel en digital, santé et deeptech.", url:"https://www.creditmutuel-innovation.eu/fr/index.html" },
+    { name:"CreaDev", type:"fo", stages:["serie-a","serie-b"], ticketMin:1000000, ticketMax:50000000,
+      sectors:["greentech","medtech","foodtech"], geos:["europe","hors-europe","idf","region"], theses:["international","industriel"],
+      desc:"Creadev est la société d’investissement créée en 2002 par la famille Mulliez (Décathlon, Leroy Merlin, Auchan…) pour soutenir les PME à fort potentiel.", url:"https://www.creadev.com/" },
+    { name:"360 Capital", type:"vc", stages:["pre-seed","seed","serie-a","serie-b"], ticketMin:50000, ticketMax:50000000,
+      sectors:["deeptech","ia","greentech","saas","marketplace","mobilite"], geos:["europe","idf","region"], theses:[],
+      desc:"360 Capital est un fonds de capital-risque européen qui investit de l’early stage (pré-seed) jusqu’à la série B.", url:"https://www.360cap.vc/" },
+    { name:"Alter Equity", type:"vc", stages:["serie-b"], ticketMin:5000000, ticketMax:50000000,
+      sectors:["greentech"], geos:["europe","idf","region"], theses:["impact"],
+      desc:"Investisseur engagé dans les entreprises à fort impact social et environnemental", url:"https://www.alter-equity.com/" },
+    { name:"Alven", type:"vc", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["deeptech","ia","saas","marketplace"], geos:["europe","idf","region"], theses:[],
+      desc:"Capital-risque early stage indépendant basé à Paris, actif depuis 2000.", url:"https://alven.co/" },
+    { name:"Asterion VC", type:"vc", stages:["pre-seed","seed"], ticketMin:50000, ticketMax:3000000,
+      sectors:["greentech"], geos:["europe","idf","region"], theses:["impact"],
+      desc:"Asterion Ventures est un fonds de capital-risque à long terme, qui investit dès le stade d’amorçage dans des projets à fort impact climatique et sociétal.", url:"https://www.asterionventures.com/en" },
+    { name:"Daphni", type:"vc", stages:["pre-seed","seed","serie-a"], ticketMin:50000, ticketMax:15000000,
+      sectors:["ia","fintech","saas","marketplace","greentech","deeptech"], geos:["europe","idf","region"], theses:[],
+      desc:"Daphni est un fonds de capital-risque basé à Paris, actif depuis 2015.", url:"https://www.daphni.com/" },
+    { name:"ELAIA", type:"vc", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["industrie","deeptech","ia","saas","marketplace"], geos:["europe","idf","region"], theses:["deeptech"],
+      desc:"Elaia est un fonds de capital-risque européen, spécialisé dans les technologies, deep tech et innovations numériques.", url:"https://www.elaia.com/" },
+    { name:"FRST", type:"vc", stages:["seed","serie-a","serie-b"], ticketMin:300000, ticketMax:50000000,
+      sectors:["saas","marketplace","ia","greentech"], geos:["europe","idf","region"], theses:[],
+      desc:"Frst est un fonds de capital-risque orienté seed / early stage, qui finance les premiers jours des fondateurs.", url:"https://www.frst.vc/#Portfolio" },
+    { name:"Finovam Gestion", type:"vc", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["ia","biotech","deeptech","industrie"], geos:["idf","region"], theses:[],
+      desc:"Société de capital-risque indépendante intervenant aux premiers stades de croissance", url:"https://finovamgestion.fr/" },
+    { name:"IRDI", type:"vc", stages:["seed","serie-a","serie-b"], ticketMin:300000, ticketMax:50000000,
+      sectors:["deeptech","ia","saas","marketplace"], geos:["idf","region"], theses:["regional"],
+      desc:"IRDI Capital Investissement est partenaire des startups, PME et ETI du Sud-Ouest depuis 40 ans, avec près de 550 millions d’euros sous gestion.", url:"https://www.irdi.fr/" },
+    { name:"IRIS", type:"vc", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["saas","marketplace","fintech","ia"], geos:["europe","idf","region"], theses:[],
+      desc:"IRIS est un fonds de venture et growth tech européen, qui intervient du seed / Series A jusqu’au late stage.", url:"https://www.iris.vc/" },
+    { name:"ISAI", type:"vc", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["saas","marketplace","ia"], geos:["europe","idf","region"], theses:[],
+      desc:"Fonds d’investissement français des entrepreneurs de la Tech.", url:"https://www.isai.fr/" },
+    { name:"Large Venture", type:"vc", stages:["serie-b"], ticketMin:5000000, ticketMax:50000000,
+      sectors:["deeptech","ia","saas","marketplace","biotech"], geos:["idf","region"], theses:[],
+      desc:"Fonds de capital-risque de 1 milliard € dédié aux entreprises innovantes à forte croissance déjà capitalisées", url:"https://www.bpifrance.fr/nos-solutions/investissement/investissement-expertise/large-venture" },
+    { name:"Newfund", type:"vc", stages:["pre-seed","seed","serie-a"], ticketMin:50000, ticketMax:15000000,
+      sectors:["fintech","medtech","foodtech","greentech"], geos:["hors-europe","idf","region"], theses:["international"],
+      desc:"Newfund est un fonds de capital-risque early stage (seed / pré-seed), fondé en 2008.", url:"https://newfundcap.com/" },
+    { name:"OC French Tech Seed", type:"vc", stages:["serie-b"], ticketMin:5000000, ticketMax:50000000,
+      sectors:["ia","deeptech"], geos:["idf","region"], theses:["deeptech"],
+      desc:"Dispositif qui vise à amplifier la levée de fonds pour les startups de moins de 3 ans et à forte intensité technologique.", url:"https://www.bpifrance.fr/catalogue-offres/oc-french-tech-seed" },
+    { name:"Serena Capital", type:"vc", stages:["seed","serie-a","serie-b"], ticketMin:300000, ticketMax:50000000,
+      sectors:["ia","saas","marketplace","deeptech"], geos:["europe","idf","region"], theses:[],
+      desc:"Fonds d’investissement créé en 2008, qui accompagne des entrepreneurs ambitieux avec un fort soutien opérationnel.", url:"https://www.serena.vc/" },
+    { name:"Ventech", type:"vc", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["saas","marketplace","greentech","medtech","ia","creative"], geos:["europe","idf","region"], theses:[],
+      desc:"Ventech est un fonds de capital-risque européen, actif depuis 1998, investisseur multi-sector early stage.", url:"https://www.ventechvc.com/" },
+    { name:"Wind Capital", type:"vc", stages:["seed","serie-a","serie-b"], ticketMin:300000, ticketMax:50000000,
+      sectors:["saas","marketplace","greentech","ia"], geos:["europe","idf","region"], theses:["impact","deeptech"],
+      desc:"Wind est un fonds de capital-risque fondé en 2015, centré sur les deeptech à impact climatique et les technologies souveraines.", url:"https://technosouveraines.fr/these" },
+    { name:"XAnge", type:"vc", stages:["seed","serie-a"], ticketMin:300000, ticketMax:15000000,
+      sectors:["saas","marketplace","greentech","fintech"], geos:["europe","idf","region"], theses:[],
+      desc:"XAnge est un fonds de venture early-stage européen opérant depuis plus de 20 ans.", url:"https://www.xange.vc/" }  ];
 
   /* ---------- Référentiels de matching ---------- */
   var TRACTION_ORDER = { 'pre-revenu':0, '<10k':1, '10-100k':2, '100-500k':3, '500k+':4 };
@@ -970,7 +988,7 @@
       sessionId: 'btd_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9),
       utm: { source:'direct', medium:'none', campaign:'none', referrer:'' }
     };
-    self.investors = INVESTORS_DEMO;
+    self.investors = INVESTORS;
   }
 
   var BTDSimulator = function () {
