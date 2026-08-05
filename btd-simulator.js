@@ -725,6 +725,32 @@
   function validPhone(p){ if(!p)return false; var c=p.replace(/[\s.\-()]/g,''); return c.length<=20 && /^(\+33|0033|0)[1-9]\d{8}$|^\+?\d{9,15}$/.test(c); }
   function validName(n){ return !!n && n.length>=1 && n.length<=50 && /^[a-zA-ZÀ-ÿ\s'\-]+$/.test(n); }
 
+  /* -----------------------------------------------------------------------------
+     Query string de la page hôte.
+     Dans une iframe, window.location.search est celui de l'iframe et non celui de
+     la page : les UTM et ?parcours=prive sont perdus. On retombe alors sur
+     document.referrer, qui porte l'URL de la page hôte.
+
+     ⚠️ Vérifié au navigateur : ce repli ne fonctionne QUE si l'iframe est servie
+     depuis la même origine que la page. En cross-origin — c'est le cas du bloc
+     HTML de Wix, servi depuis un autre domaine — la politique de référent par
+     défaut (strict-origin-when-cross-origin) réduit le référent à l'origine et la
+     query string est perdue. Pour Wix, utiliser l'élément personnalisé, qui
+     s'exécute directement dans la page, ou fixer le parcours par l'attribut mode.
+     ----------------------------------------------------------------------------- */
+  function hostSearch(){
+    var qs = '';
+    try { qs = window.location.search || ''; } catch(e){}
+    if (/[?&](utm_[a-z]+|parcours)=/.test(qs)) return qs;
+    try {
+      if (window.self !== window.top && document.referrer) {
+        var i = document.referrer.indexOf('?');
+        if (i > -1) return document.referrer.slice(i);
+      }
+    } catch(e){}
+    return qs;
+  }
+
   function ensureFont(){
     try {
       if (document.querySelector('link[data-btd-font]')) return;
@@ -974,7 +1000,7 @@
     var m = (this.getAttribute('mode') || '').toLowerCase();
     if (m !== 'public' && m !== 'prive') {
       try {
-        var p = new URLSearchParams(window.location.search || '').get('parcours');
+        var p = new URLSearchParams(hostSearch()).get('parcours');
         if (p === 'prive' || p === 'public') m = p;
       } catch (e) {}
     }
@@ -997,7 +1023,7 @@
 
   BTDSimulator.prototype._getUTM = function () {
     try {
-      var p = new URLSearchParams(window.location.search || '');
+      var p = new URLSearchParams(hostSearch());
       return { source:p.get('utm_source')||'direct', medium:p.get('utm_medium')||'none', campaign:p.get('utm_campaign')||'none', referrer:document.referrer||'direct' };
     } catch(e){ return { source:'direct', medium:'none', campaign:'none', referrer:'' }; }
   };
