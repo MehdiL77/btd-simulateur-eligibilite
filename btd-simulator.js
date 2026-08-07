@@ -75,6 +75,12 @@
     notionDb: {
       url:     'https://app.notion.com/p/Du-public-au-priv-toutes-les-options-de-financement-2025-2026-26acda9001ba80bfb163ee1555ca5c2d',
       titre:   'Du public au privé : toutes les options de financement 2025-2026',
+
+      // L'accès à la base n'est PAS affiché à l'écran : il part uniquement dans
+      // l'email. Sans cela, une adresse bidon suffirait à repartir avec la base,
+      // ce qui viderait le formulaire de son intérêt.
+      // Repasser à true pour ré-afficher la carte sur la page de résultats.
+      surSite: false,
       surPublic: false                  // true pour l'offrir aussi au parcours public
     },
 
@@ -2179,7 +2185,9 @@
   BTDSimulator.prototype._showGift = function (before) {
     var cfg = CONFIG.notionDb, gift = this.$('gift');
     if (!gift) return;
-    if (!cfg || !cfg.url || !before) { gift.style.display = 'none'; return; }
+    // surSite:false => l'accès à la base ne passe que par l'email reçu, jamais
+    // par l'écran : c'est ce qui rend l'adresse saisie réellement nécessaire.
+    if (!cfg || !cfg.url || !cfg.surSite || !before) { gift.style.display = 'none'; return; }
 
     // Le noeud est unique : on le déplace dans la section de résultats courante
     if (gift.parentNode !== before.parentNode || gift.nextSibling !== before) {
