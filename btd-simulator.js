@@ -30,6 +30,14 @@
   'use strict';
 
   var TAG = 'btd-simulator';
+
+  /* Marqueur de version — sert à vérifier quelle version est réellement servie.
+     Dans la console du navigateur, sur la page qui héberge l'outil :
+         BTD_SIMULATOR_VERSION
+     "2.0 …" = version deux parcours.  undefined = ancien fichier encore en cache. */
+  var VERSION = '2.0 — deux parcours (public + levée de fonds)';
+  try { window.BTD_SIMULATOR_VERSION = VERSION; } catch (e) {}
+
   if (customElements.get(TAG)) return;
 
   /* ---------- CONFIG ---------- */
