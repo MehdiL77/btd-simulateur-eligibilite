@@ -48,8 +48,10 @@
       templateId: 'template_04p4rbb',   // parcours PUBLIC
       templateIdPrive: ''               // parcours PRIVÉ (vide => réutilise templateId)
     },
-    makeWebhook:      'https://hook.eu2.make.com/84dc625synn7g78l7vwvgdwfq9z4fehv',
-    makeWebhookPrive: '',               // vide => réutilise makeWebhook (champ "parcours" pour router dans Make)
+    // Un webhook par parcours, donc un scénario Make et une connexion Mailchimp
+    // indépendants de chaque côté : une panne d'un parcours n'affecte pas l'autre.
+    makeWebhook:      'https://hook.eu2.make.com/84dc625synn7g78l7vwvgdwfq9z4fehv', // Outil éligibilité → Mailchimp
+    makeWebhookPrive: 'https://hook.eu2.make.com/mxfebavcmy9ijlcep7rpsx131c8nsdek', // Dataroom investisseurs → Mailchimp
     calendly:      'https://calendly.com/btd-consulting/financement?month=2026-05',
     calendlyPrive: '',                  // vide => réutilise calendly
     fontsHref:   'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap',
@@ -58,6 +60,11 @@
     calendlyJs:  'https://assets.calendly.com/assets/external/widget.js',
     maxVisible:      4,                 // dispositifs publics affichés en clair
     maxVisiblePrive: 3,                 // investisseurs affichés en clair
+
+    // Le score de préparation reste calculé et transmis (email, merge fields
+    // SCORE et NIVEAU, tags de qualification) : seul son affichage est coupé,
+    // le bloc mangeait un tiers de la hauteur du bilan sur mobile.
+    afficherScorePreparation: false,
     cooldownMs:  5000,
 
     /* -------------------------------------------------------------------------
@@ -263,24 +270,24 @@
       ] },
     { id:3, q:"Dans quel secteur évolues-tu ?", grid:true,
       o:[
-        ['saas',"Logiciel / SaaS B2B"],
-        ['ia',"Intelligence artificielle"],
-        ['deeptech',"Deeptech / Hardware"],
-        ['marketplace',"Marketplace / Plateforme"],
-        ['ecommerce',"E-commerce / Marque DTC"],
-        ['fintech',"Fintech / Assurtech"],
+        ['saas',"Logiciel / SaaS"],
+        ['ia',"IA"],
+        ['deeptech',"Deeptech"],
+        ['marketplace',"Marketplace"],
+        ['ecommerce',"E-commerce / DTC"],
+        ['fintech',"Fintech"],
         ['medtech',"Santé / MedTech"],
-        ['biotech',"Biotech / Pharma"],
-        ['greentech',"Environnement / Énergie / Climat"],
+        ['biotech',"Biotech"],
+        ['greentech',"Environnement"],
         ['agritech',"AgriTech"],
         ['foodtech',"FoodTech"],
-        ['mobilite',"Transport & mobilités"],
-        ['edtech',"EdTech / Formation"],
+        ['mobilite',"Mobilité"],
+        ['edtech',"EdTech"],
         ['industrie',"Industriel"],
-        ['btp',"BTP / Construction"],
-        ['creative',"Industrie créative / Jeux vidéo"],
-        ['ess',"ESS / Impact social"],
-        ['service',"Services aux entreprises"],
+        ['btp',"BTP"],
+        ['creative',"Industrie créative"],
+        ['ess',"ESS / Impact"],
+        ['service',"Services B2B"],
         ['autre',"Autre secteur"]
       ] },
     { id:4, q:"Quelle est ta traction commerciale ?",
@@ -317,30 +324,30 @@
     { id:8, q:"Quel type d'investisseurs recherches-tu ?", multi:true, grid:true,
       o:[
         ['ba',"Business angels"],
-        ['vc',"Fonds de capital-risque (VC)"],
-        ['cvc',"Corporate venture / industriel"],
+        ['vc',"Fonds VC"],
+        ['cvc',"Corporate venture"],
         ['fo',"Family office"],
-        ['crowd',"Crowdequity / financement participatif"],
-        ['debt',"Venture debt / financement non dilutif"],
-        ['nsp',"Je ne sais pas encore"]
+        ['crowd',"Crowdequity"],
+        ['debt',"Non dilutif"],
+        ['nsp',"Je ne sais pas"]
       ] },
     { id:9, q:"Une thèse d'investissement particulière t'intéresse ?", multi:true, grid:true,
       o:[
         ['impact',"Impact / ESG"],
-        ['deeptech',"Deeptech / recherche"],
-        ['diversite',"Diversité / fondatrices"],
+        ['deeptech',"Deeptech"],
+        ['diversite',"Diversité"],
         ['regional',"Ancrage régional"],
-        ['industriel',"Partenaire industriel"],
-        ['international',"Ouverture à l'international"],
+        ['industriel',"Industriel"],
+        ['international',"International"],
         ['aucune',"Pas de préférence"]
       ] },
     { id:10, q:"Qu'as-tu déjà préparé pour ta levée ?", multi:true, grid:true,
       o:[
         ['deck',"Un deck investisseur"],
-        ['bp',"Un prévisionnel financier"],
-        ['captable',"Une cap table à jour"],
+        ['bp',"Un prévisionnel"],
+        ['captable',"Une cap table"],
         ['dataroom',"Une data room"],
-        ['rien',"Rien de tout ça pour l'instant"]
+        ['rien',"Rien pour l'instant"]
       ] },
     { id:11, q:"Dans quel délai veux-tu lever ?",
       o:[
@@ -1332,7 +1339,28 @@
   .sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }\
   @keyframes spin{ to{ transform:rotate(360deg); } }\
   @keyframes fade{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }\
-  @media (max-width:560px){ .intro,.step,.results{ padding-left:1.3rem; padding-right:1.3rem; } .row{ flex-direction:column; gap:0; } .nav{ flex-direction:column-reverse; } .nav .btn{ width:100%; justify-content:center; } .badges{ gap:1rem; } .choices{ grid-template-columns:1fr; } .opts.grid{ grid-template-columns:1fr; } }\
+  @media (max-width:560px){\
+    .intro,.step,.results{ padding-left:1.1rem; padding-right:1.1rem; }\
+    .step{ padding-top:1.5rem; padding-bottom:1.6rem; }\
+    .results{ padding-top:1.7rem; padding-bottom:1.8rem; }\
+    .row{ flex-direction:column; gap:0; }\
+    .nav{ flex-direction:column-reverse; margin-top:1.2rem; }\
+    .nav .btn{ width:100%; justify-content:center; }\
+    .badges{ gap:1rem; }\
+    .choices{ grid-template-columns:1fr; }\
+    .question{ font-size:1.05rem; margin-bottom:.8rem; }\
+    .meta{ margin-bottom:1rem; }\
+    /* La grille reste à deux colonnes sur mobile : la passer à une colonne\
+       doublait la hauteur des questions à 19 options et imposait un défilement\
+       interminable pour choisir un secteur. */\
+    .opts{ gap:.5rem; }\
+    .opt{ padding:.8rem .9rem; font-size:.92rem; }\
+    .opts.grid .opt{ padding:.7rem .75rem; font-size:.82rem; line-height:1.25; align-items:flex-start; }\
+    .opts.grid .ck{ width:17px; height:17px; margin-top:.1rem; }\
+    .opt:hover{ transform:none; }\
+    .aid,.inv,.lock{ padding:.85rem .9rem; }\
+    .post,.unlock{ padding:1rem 1.05rem; }\
+  }\
   ";
 
   var ARROW = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
@@ -1451,7 +1479,7 @@
           '<div class="post">' +
             '<div class="post-head" id="post-head">' + ICONS.mail + 'Vérifie tes spams</div>' +
             '<p id="post-mail">Ton analyse vient d\'être envoyée par email. Si tu ne la reçois pas dans quelques minutes, pense à consulter ton dossier <strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.</p>' +
-            '<p>Pour qu\'on vérifie cette analyse ensemble et qu\'on te partage la <strong>liste complète des aides et des investisseurs</strong> adaptés à ton projet, prends rendez-vous avec un expert BTD Consulting&nbsp;:</p>' +
+            '<p>Pour la <strong>liste complète</strong> et un plan d\'action, prends rendez-vous avec un expert&nbsp;:</p>' +
           '</div>' +
           '<p class="cta-text">Réserve un créneau gratuit avec un expert :</p>' +
           '<button class="calendly" id="calendly" type="button">Prendre rendez-vous ' + ARROW + '</button>' +
@@ -1485,7 +1513,7 @@
           '<div class="post">' +
             '<div class="post-head" id="post-head-prive">' + ICONS.mail + 'Vérifie tes spams</div>' +
             '<p id="post-mail-prive">Ta short-list vient d\'être envoyée par email. Si tu ne la reçois pas dans quelques minutes, pense à consulter ton dossier <strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.</p>' +
-            '<p>Pour qu\'on affine ce ciblage ensemble, qu\'on prépare ton <strong>deck</strong> et qu\'on t\'ouvre les <strong>bonnes portes</strong>, prends rendez-vous avec un expert BTD Consulting&nbsp;:</p>' +
+            '<p>Pour affiner ce ciblage et t\'ouvrir les <strong>bonnes portes</strong>, prends rendez-vous avec un expert&nbsp;:</p>' +
           '</div>' +
           '<p class="cta-text">Réserve un créneau gratuit avec un expert :</p>' +
           '<button class="calendly" id="calendly-prive" type="button">Prendre rendez-vous ' + ARROW + '</button>' +
@@ -2217,14 +2245,13 @@
     if (!head || !p) return;
     if (this.state.emailOK) {
       head.innerHTML = ICONS.mail + 'Vérifie tes spams';
-      p.innerHTML = quoi + ' vient d\'être envoyée par email. Si tu ne la reçois pas dans ' +
-        'quelques minutes, pense à consulter ton dossier ' +
-        '<strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.';
+      p.innerHTML = quoi + ' est partie par email. Si tu ne la vois pas, regarde dans tes ' +
+        '<strong>spams</strong> ou tes <strong>promotions</strong>.';
     } else {
       // Promettre un mail qui n'est jamais parti envoie les gens fouiller leurs spams pour rien.
       head.innerHTML = ICONS.mail + 'Garde cette page sous la main';
-      p.innerHTML = 'L\'envoi par email n\'a pas pu aboutir. Note ce que tu vois ci-dessus ou ' +
-        'garde cet onglet ouvert&nbsp;: on te renverra tout par écrit lors de l\'échange.';
+      p.innerHTML = 'L\'envoi par email n\'a pas abouti. Garde cet onglet ouvert&nbsp;: ' +
+        'on te renverra tout par écrit lors de l\'échange.';
     }
   };
 
@@ -2269,18 +2296,22 @@
     this._noticeEmail('post-head-prive', 'post-mail-prive', 'Ta short-list');
     this._showGift(this.root.querySelector('#results-prive .post'));
 
-    this.$('gauge-lbl').textContent = 'Préparation à la levée : ' + rd.label;
-    this.$('gauge-val').textContent = rd.score + '/100';
-    var fill = this.$('gauge-fill');
-    fill.className = 'gauge-fill ' + rd.tone;
-
-    var tips = this.$('gauge-tips'); tips.innerHTML = '';
-    rd.tips.forEach(function (t) { var li = document.createElement('li'); li.textContent = t; tips.appendChild(li); });
+    var jauge = this.$('gauge'), fill = this.$('gauge-fill');
+    if (!CONFIG.afficherScorePreparation) {
+      jauge.style.display = 'none';
+    } else {
+      jauge.style.display = 'block';
+      this.$('gauge-lbl').textContent = 'Préparation à la levée : ' + rd.label;
+      this.$('gauge-val').textContent = rd.score + '/100';
+      fill.className = 'gauge-fill ' + rd.tone;
+      var tips = this.$('gauge-tips'); tips.innerHTML = '';
+      rd.tips.forEach(function (t) { var li = document.createElement('li'); li.textContent = t; tips.appendChild(li); });
+    }
 
     setTimeout(function () {
       self.$('loading').style.display = 'none';
       self.$('results-prive').style.display = 'block';
-      setTimeout(function () { fill.style.width = rd.score + '%'; }, 80);
+      if (CONFIG.afficherScorePreparation) setTimeout(function () { fill.style.width = rd.score + '%'; }, 80);
       self._say('Analyse terminée : ' + matches.length + ' investisseurs identifiés');
       self._scrollTop();
     }, 1500);
