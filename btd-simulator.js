@@ -1096,8 +1096,8 @@
           '<div class="aids" id="aids"></div>' +
           '<div class="blurred" id="blurred" style="display:none"><div id="blurred-content"></div><div class="blur-ov"><div class="blur-msg">D\'autres aides semblent éligibles pour ton projet&nbsp;! Prends RDV pour une analyse complète.</div></div></div>' +
           '<div class="post">' +
-            '<div class="post-head">' + ICONS.mail + 'Vérifie tes spams</div>' +
-            '<p>Ton analyse vient d\'être envoyée par email. Si tu ne la reçois pas dans quelques minutes, pense à consulter ton dossier <strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.</p>' +
+            '<div class="post-head" id="post-head">' + ICONS.mail + 'Vérifie tes spams</div>' +
+            '<p id="post-mail">Ton analyse vient d\'être envoyée par email. Si tu ne la reçois pas dans quelques minutes, pense à consulter ton dossier <strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.</p>' +
             '<p>Pour qu\'on vérifie cette analyse ensemble et qu\'on te partage la <strong>liste complète des aides et des investisseurs</strong> adaptés à ton projet, prends rendez-vous avec un expert BTD Consulting&nbsp;:</p>' +
           '</div>' +
           '<p class="cta-text">Réserve un créneau gratuit avec un expert :</p>' +
@@ -1130,8 +1130,8 @@
             '<a class="gift-btn" id="gift-link" target="_blank" rel="noopener noreferrer">Ouvrir la base ' + ARROW + '</a>' +
           '</div>' +
           '<div class="post">' +
-            '<div class="post-head">' + ICONS.mail + 'Vérifie tes spams</div>' +
-            '<p>Ta short-list vient d\'être envoyée par email. Si tu ne la reçois pas dans quelques minutes, pense à consulter ton dossier <strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.</p>' +
+            '<div class="post-head" id="post-head-prive">' + ICONS.mail + 'Vérifie tes spams</div>' +
+            '<p id="post-mail-prive">Ta short-list vient d\'être envoyée par email. Si tu ne la reçois pas dans quelques minutes, pense à consulter ton dossier <strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.</p>' +
             '<p>Pour qu\'on affine ce ciblage ensemble, qu\'on prépare ton <strong>deck</strong> et qu\'on t\'ouvre les <strong>bonnes portes</strong>, prends rendez-vous avec un expert BTD Consulting&nbsp;:</p>' +
           '</div>' +
           '<p class="cta-text">Réserve un créneau gratuit avec un expert :</p>' +
@@ -1616,6 +1616,7 @@
       .then(function (r) {
         var emailOK = r[0], makeOK = r[1];
         diag.emailOK = emailOK; diag.makeOK = makeOK;
+        self.state.emailOK = emailOK;
         // Consultable dans la console : BTD_LAST_SEND
         try { window.BTD_LAST_SEND = diag; } catch (e) {}
         if (!emailOK && !makeOK) {
@@ -1812,6 +1813,8 @@
     if (blurred.length === 0) { wrap.style.display = 'none'; }
     else { blurred.forEach(function (x) { content.appendChild(self._aidEl(x)); }); wrap.style.display = 'block'; }
 
+    this._noticeEmail('post-head', 'post-mail', 'Ton analyse');
+
     this.$('pill').textContent = aids.length + ' dispositif' + (aids.length > 1 ? 's' : '') + ' identifié' + (aids.length > 1 ? 's' : '');
 
     if (CONFIG.notionDb && CONFIG.notionDb.surPublic) this._showGift(this.root.querySelector('#results .post'));
@@ -1853,6 +1856,23 @@
     gift.style.display = 'block';
   };
 
+  /* ----- N'annonce l'envoi du mail que s'il a réellement abouti ----- */
+  BTDSimulator.prototype._noticeEmail = function (headId, pId, quoi) {
+    var head = this.$(headId), p = this.$(pId);
+    if (!head || !p) return;
+    if (this.state.emailOK) {
+      head.innerHTML = ICONS.mail + 'Vérifie tes spams';
+      p.innerHTML = quoi + ' vient d\'être envoyée par email. Si tu ne la reçois pas dans ' +
+        'quelques minutes, pense à consulter ton dossier ' +
+        '<strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.';
+    } else {
+      // Promettre un mail qui n'est jamais parti envoie les gens fouiller leurs spams pour rien.
+      head.innerHTML = ICONS.mail + 'Garde cette page sous la main';
+      p.innerHTML = 'L\'envoi par email n\'a pas pu aboutir. Note ce que tu vois ci-dessus ou ' +
+        'garde cet onglet ouvert&nbsp;: on te renverra tout par écrit lors de l\'échange.';
+    }
+  };
+
   BTDSimulator.prototype._aidEl = function (name) {
     var el = document.createElement('div'); el.className = 'aid';
     var nm = document.createElement('div'); nm.className = 'aid-name'; nm.textContent = name;
@@ -1891,6 +1911,7 @@
         "Aucun investisseur de notre base ne correspond exactement à ces critères. Un échange avec un expert permettra d'élargir le ciblage ou de préparer ta levée en amont.";
     }
 
+    this._noticeEmail('post-head-prive', 'post-mail-prive', 'Ta short-list');
     this._showGift(this.root.querySelector('#results-prive .post'));
 
     this.$('gauge-lbl').textContent = 'Préparation à la levée : ' + rd.label;
