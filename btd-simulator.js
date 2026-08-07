@@ -56,11 +56,13 @@
        BASE NOTION offerte en fin de parcours privé
        « Du public au privé : toutes les options de financement (2025-2026) »
 
-       ⚠️ L'URL doit être le lien PUBLIC de la page (Notion > Partager >
-       Publier sur le web > copier le lien, en *.notion.site).
-       Un lien app.notion.com/p/... est le lien interne de l'espace de travail :
-       les leads qui n'ont pas accès à ton workspace tombent sur un mur de
-       connexion et le cadeau ne leur parvient jamais.
+       La page est publiée sur le web : accès vérifié depuis un navigateur sans
+       session Notion. (Une requête automatisée sur cette URL reçoit un 403 :
+       Notion bloque les robots, ce n'est pas un défaut de partage.)
+
+       Si tu changes d'URL un jour, teste-la en navigation privée avant de la
+       mettre ici — un lien non publié enverrait les leads sur un écran de
+       connexion sans que rien ne le signale côté outil.
        ------------------------------------------------------------------------- */
     notionDb: {
       url:     'https://app.notion.com/p/Du-public-au-priv-toutes-les-options-de-financement-2025-2026-26acda9001ba80bfb163ee1555ca5c2d',
