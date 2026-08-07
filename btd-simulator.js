@@ -1603,9 +1603,21 @@
   /* ----- Envoi + gestion d'échec commun aux deux parcours ----- */
   BTDSimulator.prototype._finish = function (tasks, onOk, extra) {
     var self = this;
-    Promise.all(tasks.map(function (p) { return p.then(function () { return true; }).catch(function () { return false; }); }))
+    var diag = { parcours: this.state.track, emailError: null, makeError: null };
+    var noms = ['EmailJS', 'webhook Make'];
+    Promise.all(tasks.map(function (p, i) {
+      return p.then(function () { return true; }).catch(function (err) {
+        // Un envoi qui échoue en silence est indébogable : on trace la cause.
+        diag[i === 0 ? 'emailError' : 'makeError'] = (err && (err.text || err.message)) || String(err);
+        try { console.warn('[BTD simulateur] ' + noms[i] + ' a échoué :', err); } catch (e) {}
+        return false;
+      });
+    }))
       .then(function (r) {
         var emailOK = r[0], makeOK = r[1];
+        diag.emailOK = emailOK; diag.makeOK = makeOK;
+        // Consultable dans la console : BTD_LAST_SEND
+        try { window.BTD_LAST_SEND = diag; } catch (e) {}
         if (!emailOK && !makeOK) {
           self.$('loading').style.display = 'none';
           self.$('steps').style.display = 'block';
