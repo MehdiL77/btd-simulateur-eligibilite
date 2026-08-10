@@ -45,8 +45,13 @@
     emailjs: {
       publicKey:  '9wQDV2yQMMiwHxrlp',
       serviceId:  'service_6dapp1n',
-      templateId: 'template_04p4rbb',   // parcours PUBLIC
-      templateIdPrive: ''               // parcours PRIVÉ (vide => réutilise templateId)
+      // Un modèle par parcours. Attention au piège : template_04p4rbb servait
+      // au parcours public à l'origine, il a été réaffecté au financement privé
+      // et un nouveau modèle a été créé pour le public. Les identifiants
+      // ci-dessous suivent les noms affichés dans EmailJS > Email Templates,
+      // pas l'historique du fichier.
+      templateId:      'template_dxqgkva',  // « Auto-Reply - Financement Public »
+      templateIdPrive: 'template_04p4rbb'   // « Auto-Reply - Financement Privé »
     },
     // Un webhook par parcours, donc un scénario Make et une connexion Mailchimp
     // indépendants de chaque côté : une panne d'un parcours n'affecte pas l'autre.
