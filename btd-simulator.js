@@ -1925,6 +1925,9 @@
       track('simulator_complete', { parcours:'prive', investors_count: matches.length, readiness: rd.score });
 
       var visible = matches.slice(0, CONFIG.maxVisiblePrive);
+      var cartesHtml = visible.map(function (x) {
+        return emailCard(x.name + ' — ' + x.typeLabel + ' (' + x.ticket + ')', x.desc);
+      }).join('');
       var payload = self._payloadPrive(a, matches, rd);
 
       var tasks = [
@@ -1933,11 +1936,16 @@
           params: {
             email: a.email, firstname: a.firstname, parcours: 'levee-de-fonds',
             message: visible.map(function (x) { return '• ' + x.name + ' (' + x.typeLabel + ', ticket ' + x.ticket + ') : ' + x.desc; }).join('\n\n'),
+            // Les deux nomenclatures sont envoyées : selon le template privé
+            // utilisé, les cartes s'appellent aids_* ou funds_*. EmailJS ignore
+            // les variables non référencées, il n'y a donc rien à arbitrer ici.
             aids_count: matches.length,
+            funds_count: matches.length,
             investors_count: matches.length,
             readiness_score: rd.score,
             readiness_label: rd.label,
-            aids_html: visible.map(function (x) { return emailCard(x.name + ' — ' + x.typeLabel + ' (' + x.ticket + ')', x.desc); }).join(''),
+            aids_html: cartesHtml,
+            funds_html: cartesHtml,
             calendly_url: CONFIG.calendlyPrive || CONFIG.calendly,
             notion_url: CONFIG.notionDb.url || '',
             notion_titre: CONFIG.notionDb.titre || '',
