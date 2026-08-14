@@ -1485,7 +1485,7 @@
             '<p id="post-mail">Ton analyse vient d\'être envoyée par email. Si tu ne la reçois pas dans quelques minutes, pense à consulter ton dossier <strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.</p>' +
             '<p>Pour la <strong>liste complète</strong> et un plan d\'action, prends rendez-vous avec un expert&nbsp;:</p>' +
           '</div>' +
-          '<p class="cta-text">Réserve un créneau gratuit avec un expert :</p>' +
+          '<p class="cta-text">Réserve un créneau avec un expert :</p>' +
           '<button class="calendly" id="calendly" type="button">Prendre rendez-vous ' + ARROW + '</button>' +
           '<div class="cross" id="cross-public">' +
             '<p>Une levée de fonds est aussi dans tes projets&nbsp;? Découvre quels investisseurs peuvent financer ton entreprise.</p>' +
@@ -1506,7 +1506,7 @@
           '<div class="aids" id="investors"></div>' +
           '<div class="unlock" id="unlock" style="display:none">' +
             '<h3 id="unlock-title"></h3>' +
-            '<p>Le détail de ces investisseurs (nom, contact, thèse, tickets et process d\'entrée) te sera présenté lors de ton <strong>rendez-vous gratuit</strong> avec un expert BTD Consulting.</p>' +
+            '<p>Le détail de ces investisseurs (nom, contact, thèse, tickets et process d\'entrée) te sera présenté lors de ton <strong>rendez-vous</strong> avec un expert BTD Consulting.</p>' +
           '</div>' +
           '<div class="gift" id="gift" style="display:none">' +
             '<div class="gift-head">' + ICONS.gift + 'Ta base de données financement est offerte</div>' +
@@ -1519,7 +1519,7 @@
             '<p id="post-mail-prive">Ta short-list vient d\'être envoyée par email. Si tu ne la reçois pas dans quelques minutes, pense à consulter ton dossier <strong>« courriers indésirables »</strong> ou <strong>« promotions »</strong>.</p>' +
             '<p>Pour affiner ce ciblage et t\'ouvrir les <strong>bonnes portes</strong>, prends rendez-vous avec un expert&nbsp;:</p>' +
           '</div>' +
-          '<p class="cta-text">Réserve un créneau gratuit avec un expert :</p>' +
+          '<p class="cta-text">Réserve un créneau avec un expert :</p>' +
           '<button class="calendly" id="calendly-prive" type="button">Prendre rendez-vous ' + ARROW + '</button>' +
           '<div class="cross" id="cross-prive">' +
             '<p>Avant de diluer ton capital, vérifie ce que tu peux obtenir en financement public&nbsp;: subventions, avances remboursables et crédits d\'impôt réduisent le montant à lever.</p>' +
@@ -1549,7 +1549,7 @@
             '<span class="choice-go">Commencer ' + ARROW + '</span>' +
           '</button>' +
         '</div>' +
-        '<p class="reassure">2 minutes&nbsp;· Gratuit&nbsp;· Résultat envoyé par email</p>';
+        '<p class="reassure">2 minutes&nbsp;· Résultat envoyé par email</p>';
     }
     var t = TRACKS[this.mode];
     return '' +
