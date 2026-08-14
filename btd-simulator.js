@@ -275,24 +275,15 @@
       ] },
     { id:3, q:"Dans quel secteur évolues-tu ?", grid:true,
       o:[
-        ['saas',"Logiciel / SaaS"],
-        ['ia',"IA"],
-        ['deeptech',"Deeptech"],
-        ['marketplace',"Marketplace"],
-        ['ecommerce',"E-commerce / DTC"],
-        ['fintech',"Fintech"],
-        ['medtech',"Santé / MedTech"],
-        ['biotech',"Biotech"],
-        ['greentech',"Environnement"],
-        ['agritech',"AgriTech"],
-        ['foodtech',"FoodTech"],
-        ['mobilite',"Mobilité"],
-        ['edtech',"EdTech"],
-        ['industrie',"Industriel"],
-        ['btp',"BTP"],
-        ['creative',"Industrie créative"],
-        ['ess',"ESS / Impact"],
-        ['service',"Services B2B"],
+        ['tech',"Logiciel, SaaS & IA"],
+        ['deeptech',"Deeptech & industrie"],
+        ['sante',"Santé & biotech"],
+        ['fintech',"Fintech & assurance"],
+        ['environnement',"Environnement & énergie"],
+        ['alimentation',"Alimentation & agriculture"],
+        ['commerce',"Commerce, marques & médias"],
+        ['mobilite',"Mobilité & logistique"],
+        ['services',"Services, formation & impact"],
         ['autre',"Autre secteur"]
       ] },
     { id:4, q:"Quelle est ta traction commerciale ?",
@@ -375,26 +366,34 @@
      couvre Environnement, Transition écologique et Énergies renouvelables).
      Si tu renommes un secteur dans Notion, mets à jour la valeur ici.
      ----------------------------------------------------------------------------- */
+  /* Familles affichées au questionnaire -> secteurs du moteur de matching.
+     Dix familles au lieu de dix-neuf secteurs : sur mobile, la question tenait
+     sur deux écrans et il fallait faire défiler longtemps avant « Suivant ». */
+  var SECTEUR_GROUPE = {
+    tech:          ['saas', 'marketplace', 'ia'],
+    deeptech:      ['deeptech', 'ia', 'industrie', 'btp'],
+    sante:         ['medtech', 'biotech'],
+    fintech:       ['fintech'],
+    environnement: ['greentech'],
+    alimentation:  ['foodtech', 'agritech'],
+    commerce:      ['ecommerce', 'creative'],
+    mobilite:      ['mobilite'],
+    services:      ['service', 'edtech', 'ess'],
+    autre:         ['autre']
+  };
+
+  /* Mêmes familles -> noms exacts des secteurs de la base Notion. */
   var SECTEUR_NOTION = {
-    saas:        ['Digital / SaaS'],
-    ia:          ['IA', 'Deeptech'],
-    deeptech:    ['Deeptech'],
-    marketplace: ['Digital / SaaS'],
-    ecommerce:   ['Généraliste'],
-    fintech:     ['FinTech'],
-    medtech:     ['MedTech'],
-    biotech:     ['BioTech'],
-    greentech:   ['Environnement', 'Transition écologique', 'Energies renouvelables'],
-    agritech:    ['AgriTech'],
-    foodtech:    ['FoodTech'],
-    mobilite:    ['Transport & mobilités'],
-    edtech:      ['EdTech'],
-    industrie:   ['Industriel'],
-    btp:         ['BTP'],
-    creative:    ['Industrie créative', 'Jeux vidéos', 'Cinéma', 'Culture'],
-    ess:         ['ESS'],
-    service:     ['Service', 'LegalTech'],
-    autre:       ['Généraliste']
+    tech:          ['Digital / SaaS', 'IA'],
+    deeptech:      ['Deeptech', 'Industriel', 'BTP'],
+    sante:         ['MedTech', 'BioTech'],
+    fintech:       ['FinTech'],
+    environnement: ['Environnement', 'Transition écologique', 'Energies renouvelables'],
+    alimentation:  ['FoodTech', 'AgriTech'],
+    commerce:      ['Généraliste', 'Industrie créative', 'Jeux vidéos', 'Cinéma', 'Culture'],
+    mobilite:      ['Transport & mobilités'],
+    services:      ['Service', 'LegalTech', 'EdTech', 'ESS'],
+    autre:         ['Généraliste']
   };
 
   /* -----------------------------------------------------------------------------
@@ -964,7 +963,7 @@
     var stages = amount.stages.filter(function(s){ return stageSet.indexOf(s)>-1; });
     if (!stages.length) stages = amount.stages;
 
-    var sector   = a[3];
+    var mesSecteurs = SECTEUR_GROUPE[a[3]] || [a[3]];
     var traction = TRACTION_ORDER[a[4]] !== undefined ? TRACTION_ORDER[a[4]] : 0;
     var geo      = a[7];
     var wanted   = arr(a[8]).filter(function(x){ return x!=='nsp'; });
@@ -991,7 +990,7 @@
       var overlap = Math.min(tMax, amount.max) - Math.max(tMin, amount.min);
       if (overlap <= 0) return;                                       // ticket hors fourchette
 
-      var sectorExact = secs.indexOf(sector) > -1;
+      var sectorExact = secs.some(function (x) { return mesSecteurs.indexOf(x) > -1; });
       var sectorAll   = secs.indexOf('all') > -1;
       if (!sectorExact && !sectorAll) return;                         // secteur non couvert
 
